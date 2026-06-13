@@ -1,3 +1,14 @@
+diff --git a/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileChanges/last-build.bin b/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileChanges/last-build.bin
+new file mode 100644
+index 0000000..f76dd23
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileChanges/last-build.bin differ
+diff --git a/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileHashes/fileHashes.lock b/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileHashes/fileHashes.lock
+new file mode 100644
+index 0000000..dfabdfe
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/fileHashes/fileHashes.lock differ
+diff --git a/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/gc.properties b/node_modules/react-native-spotify-remote/android/.gradle/5.6.4/gc.properties
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/react-native-spotify-remote/android/.gradle/nb-cache/trust/61B6AEA1B98F3C07428965AACCC83235505EC74D90CC4FB4696294F9276A6DCD b/node_modules/react-native-spotify-remote/android/.gradle/nb-cache/trust/61B6AEA1B98F3C07428965AACCC83235505EC74D90CC4FB4696294F9276A6DCD
 new file mode 100644
 index 0000000..62428db
@@ -6,7 +17,7 @@ index 0000000..62428db
 @@ -0,0 +1 @@
 +2C1F0593697090E5563C9BD9FB9246E1889636AFBFB74AE2737A5845FED33F1D
 diff --git a/node_modules/react-native-spotify-remote/android/build.gradle b/node_modules/react-native-spotify-remote/android/build.gradle
-index 381c0cf..89c4113 100644
+index 381c0cf..6c5385e 100644
 --- a/node_modules/react-native-spotify-remote/android/build.gradle
 +++ b/node_modules/react-native-spotify-remote/android/build.gradle
 @@ -1,47 +1,19 @@
@@ -92,7 +103,8 @@ index 381c0cf..89c4113 100644
  dependencies {
      def externalLibs = fileTree(dir: "$projectDir/external", include: '**/*.aar').collect()
      println("Adding external libraries ${externalLibs}")
-     implementation files(externalLibs)
+-    implementation files(externalLibs)
++    compileOnly files(externalLibs)  // AGP 8: app module provides these aars at runtime
      implementation "com.google.code.gson:gson:2.8.5"  // needed by spotify-app-remote
      implementation project(path: ':react-native-events')  // From node_module
 -    //noinspection GradleDynamicVersion
@@ -248,7 +260,7 @@ index 0000000..f202ef6
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAppModule$1.dex differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAppModule.dex b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAppModule.dex
 new file mode 100644
-index 0000000..eba7302
+index 0000000..1e2ff5f
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAppModule.dex differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAuthModule$1.dex b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemoteAuthModule$1.dex
 new file mode 100644
@@ -264,7 +276,7 @@ index 0000000..cff8236
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/bundleLibRuntimeToDirDebug_dex/com/reactlibrary/RNSpotifyRemotePackage.dex differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin
 new file mode 100644
-index 0000000..dc39dc6
+index 0000000..50ac663
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/.transforms/50f575a86d8ef0a457c5eeb9fc8c2502/transformed/bundleLibRuntimeToDirDebug/desugar_graph.bin differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/.transforms/8bfda3d2ec91c0a55bf0a275f57bfd5e/results.bin b/node_modules/react-native-spotify-remote/android/build/.transforms/8bfda3d2ec91c0a55bf0a275f57bfd5e/results.bin
 new file mode 100644
@@ -275,7 +287,7 @@ index 0000000..0d259dd
 +o/classes
 diff --git a/node_modules/react-native-spotify-remote/android/build/.transforms/8bfda3d2ec91c0a55bf0a275f57bfd5e/transformed/classes/classes_dex/classes.dex b/node_modules/react-native-spotify-remote/android/build/.transforms/8bfda3d2ec91c0a55bf0a275f57bfd5e/transformed/classes/classes_dex/classes.dex
 new file mode 100644
-index 0000000..e802851
+index 0000000..7e9a5d7
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/.transforms/8bfda3d2ec91c0a55bf0a275f57bfd5e/transformed/classes/classes_dex/classes.dex differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/generated/source/buildConfig/debug/com/reactlibrary/BuildConfig.java b/node_modules/react-native-spotify-remote/android/build/generated/source/buildConfig/debug/com/reactlibrary/BuildConfig.java
 new file mode 100644
@@ -332,6 +344,10 @@ index 0000000..99bfe68
 +  "elementType": "File"
 +}
 \ No newline at end of file
+diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/aar_main_jar/debug/syncDebugLibJars/classes.jar b/node_modules/react-native-spotify-remote/android/build/intermediates/aar_main_jar/debug/syncDebugLibJars/classes.jar
+new file mode 100644
+index 0000000..87f696e
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/aar_main_jar/debug/syncDebugLibJars/classes.jar differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties b/node_modules/react-native-spotify-remote/android/build/intermediates/aar_metadata/debug/writeDebugAarMetadata/aar-metadata.properties
 new file mode 100644
 index 0000000..1211b1e
@@ -352,9 +368,12 @@ index 0000000..9e26dfe
 @@ -0,0 +1 @@
 +{}
 \ No newline at end of file
+diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/annotations_typedef_file/debug/extractDebugAnnotations/typedefs.txt b/node_modules/react-native-spotify-remote/android/build/intermediates/annotations_typedef_file/debug/extractDebugAnnotations/typedefs.txt
+new file mode 100644
+index 0000000..e69de29
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar b/node_modules/react-native-spotify-remote/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar
 new file mode 100644
-index 0000000..50a7886
+index 0000000..cad2223
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/compile_library_classes_jar/debug/bundleLibCompileToJarDebug/classes.jar differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar b/node_modules/react-native-spotify-remote/android/build/intermediates/compile_r_class_jar/debug/generateDebugRFile/R.jar
 new file mode 100644
@@ -363,6 +382,10 @@ Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/bu
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt b/node_modules/react-native-spotify-remote/android/build/intermediates/compile_symbol_list/debug/generateDebugRFile/R.txt
 new file mode 100644
 index 0000000..e69de29
+diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state b/node_modules/react-native-spotify-remote/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state
+new file mode 100644
+index 0000000..1c983fc
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/incremental/debug-mergeJavaRes/merge-state differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties b/node_modules/react-native-spotify-remote/android/build/intermediates/incremental/debug/packageDebugResources/compile-file-map.properties
 new file mode 100644
 index 0000000..bb5960a
@@ -424,7 +447,7 @@ index 0000000..939d35e
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAppModule$1.class differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAppModule.class b/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAppModule.class
 new file mode 100644
-index 0000000..a2b1d13
+index 0000000..d3a1bcd
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAppModule.class differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAuthModule$1.class b/node_modules/react-native-spotify-remote/android/build/intermediates/javac/debug/compileDebugJavaWithJavac/classes/com/reactlibrary/RNSpotifyRemoteAuthModule$1.class
 new file mode 100644
@@ -459,6 +482,10 @@ index 0000000..1f97891
 +5    <uses-sdk android:minSdkVersion="24" />
 +6
 +7</manifest>
+diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/merged_java_res/debug/mergeDebugJavaResource/feature-react-native-spotify-remote.jar b/node_modules/react-native-spotify-remote/android/build/intermediates/merged_java_res/debug/mergeDebugJavaResource/feature-react-native-spotify-remote.jar
+new file mode 100644
+index 0000000..15cb0ec
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/merged_java_res/debug/mergeDebugJavaResource/feature-react-native-spotify-remote.jar differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml b/node_modules/react-native-spotify-remote/android/build/intermediates/merged_manifest/debug/processDebugManifest/AndroidManifest.xml
 new file mode 100644
 index 0000000..c98700d
@@ -507,7 +534,7 @@ index 0000000..939d35e
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAppModule$1.class differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAppModule.class b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAppModule.class
 new file mode 100644
-index 0000000..a2b1d13
+index 0000000..d3a1bcd
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAppModule.class differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAuthModule$1.class b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemoteAuthModule$1.class
 new file mode 100644
@@ -523,7 +550,7 @@ index 0000000..b0414c8
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_dir/debug/bundleLibRuntimeToDirDebug/com/reactlibrary/RNSpotifyRemotePackage.class differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar
 new file mode 100644
-index 0000000..664840b
+index 0000000..0cd61af
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/intermediates/runtime_library_classes_jar/debug/bundleLibRuntimeToJarDebug/classes.jar differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt b/node_modules/react-native-spotify-remote/android/build/intermediates/symbol_list_with_package_name/debug/generateDebugRFile/package-aware-r.txt
 new file mode 100644
@@ -554,9 +581,29 @@ index 0000000..0fed9c9
 +		INJECTED from /Users/saar/Desktop/MyProject/Wakify/node_modules/react-native-spotify-remote/android/src/main/AndroidManifest.xml
 +	android:minSdkVersion
 +		INJECTED from /Users/saar/Desktop/MyProject/Wakify/node_modules/react-native-spotify-remote/android/src/main/AndroidManifest.xml
+diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule$1.class.uniqueId4 b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule$1.class.uniqueId4
+new file mode 100644
+index 0000000..939d35e
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule$1.class.uniqueId4 differ
+diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule.class.uniqueId2 b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule.class.uniqueId2
+new file mode 100644
+index 0000000..a2b1d13
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAppModule.class.uniqueId2 differ
+diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule$1.class.uniqueId1 b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule$1.class.uniqueId1
+new file mode 100644
+index 0000000..a705915
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule$1.class.uniqueId1 differ
+diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule.class.uniqueId0 b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule.class.uniqueId0
+new file mode 100644
+index 0000000..7e59e45
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemoteAuthModule.class.uniqueId0 differ
+diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemotePackage.class.uniqueId3 b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemotePackage.class.uniqueId3
+new file mode 100644
+index 0000000..b0414c8
+Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/compileTransaction/stash-dir/RNSpotifyRemotePackage.class.uniqueId3 differ
 diff --git a/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin
 new file mode 100644
-index 0000000..eb920ad
+index 0000000..14c2832
 Binary files /dev/null and b/node_modules/react-native-spotify-remote/android/build/tmp/compileDebugJavaWithJavac/previous-compilation-data.bin differ
 diff --git a/node_modules/react-native-spotify-remote/android/src/main/AndroidManifest.xml b/node_modules/react-native-spotify-remote/android/src/main/AndroidManifest.xml
 index 41a92ab..0a0938a 100644
