@@ -7,13 +7,25 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "postinstall": "patch-package"
   },
   "dependencies": {
+    "@notifee/react-native": "^9.1.8",
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "@react-native/new-app-screen": "0.85.3",
+    "patch-package": "^8.0.1",
     "react": "19.2.3",
     "react-native": "0.85.3",
-    "@react-native/new-app-screen": "0.85.3",
-    "react-native-safe-area-context": "^5.5.2"
+    "react-native-app-auth": "^8.4.0",
+    "react-native-events": "^1.0.21",
+    "react-native-keychain": "^10.0.0",
+    "react-native-linear-gradient": "^2.8.3",
+    "react-native-safe-area-context": "^5.5.2",
+    "react-native-sound": "^0.13.0",
+    "react-native-spotify-remote": "^0.3.10",
+    "react-native-svg": "^15.15.5",
+    "react-native-volume-manager": "^2.0.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
