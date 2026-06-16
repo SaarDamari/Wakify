@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import notifee, {
   AndroidCategory,
+  AndroidForegroundServiceType,
   AndroidImportance,
   AndroidVisibility,
   AuthorizationStatus,
@@ -125,6 +126,14 @@ function buildAlarmNotification(
       fullScreenAction: { id: 'default', launchActivity: 'default' },
       pressAction: { id: 'default', launchActivity: 'default' },
       autoCancel: false,
+      // Run the ring under a media foreground service so the process + audio
+      // survive Doze and being backgrounded (Scenarios 3 & 4). The registered
+      // runner (index.js) keeps it alive and force-foregrounds the ring screen;
+      // App.tsx calls notifee.stopForegroundService() on Stop/Snooze.
+      asForegroundService: true,
+      foregroundServiceTypes: [
+        AndroidForegroundServiceType.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+      ],
     },
     ios: {
       sound: 'alarm.wav', // bundled in the iOS app target
@@ -274,8 +283,12 @@ export async function showSnoozePending(
       android: {
         channelId: SNOOZE_INFO_CHANNEL_ID,
         importance: AndroidImportance.LOW,
-        ongoing: true,
-        autoCancel: false,
+        // Not pinned: dismissible by swipe/tap and auto-clears after a short
+        // while so it doesn't sit stuck in the shade. The in-app banner remains
+        // the persistent "snooze pending" indicator.
+        ongoing: false,
+        autoCancel: true,
+        timeoutAfter: 10000,
         pressAction: { id: 'default', launchActivity: 'default' },
       },
       ios: { interruptionLevel: 'passive' as const },

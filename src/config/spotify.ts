@@ -16,6 +16,10 @@ export const SPOTIFY_SCOPES = [
   'streaming',
   'app-remote-control',
   'user-modify-playback-state',
+  // Library browsing for the premium song/playlist picker (Web API).
+  'playlist-read-private',
+  'playlist-read-collaborative',
+  'user-library-read',
 ];
 
 export const spotifyAuthConfig: AuthConfiguration = {

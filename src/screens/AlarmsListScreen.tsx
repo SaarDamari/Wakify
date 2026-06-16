@@ -16,12 +16,15 @@ import { font, spacing, shadow } from '../theme/metrics';
 import { AlarmCard } from '../components/AlarmCard';
 import { NextAlarmBanner } from '../components/NextAlarmBanner';
 import { Icon } from '../components/Icon';
+import { t } from '../i18n';
 
 interface AlarmsListScreenProps {
   onOpenSettings: () => void;
   onAddAlarm: () => void;
   onEditAlarm: (alarm: Alarm) => void;
   snoozeBanner?: string | null; // time label when a snooze is pending
+  showReliabilityWarning?: boolean; // missing full-screen/overlay grants
+  onFixReliability?: () => void;
 }
 
 export function AlarmsListScreen({
@@ -29,6 +32,8 @@ export function AlarmsListScreen({
   onAddAlarm,
   onEditAlarm,
   snoozeBanner,
+  showReliabilityWarning,
+  onFixReliability,
 }: AlarmsListScreenProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -48,7 +53,9 @@ export function AlarmsListScreen({
         ]}
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerRow}>
-          <Text style={[styles.title, { color: theme.text }]}>Alarms</Text>
+          <Text style={[styles.title, { color: theme.text }]}>
+            {t('alarms_title')}
+          </Text>
           <Pressable
             onPress={onOpenSettings}
             android_ripple={{ color: palette.ripple, borderless: true }}
@@ -62,6 +69,27 @@ export function AlarmsListScreen({
 
         <NextAlarmBanner result={next} />
 
+        {showReliabilityWarning && (
+          <Pressable
+            onPress={onFixReliability}
+            android_ripple={{ color: palette.ripple }}
+            style={[
+              styles.warnBanner,
+              { backgroundColor: palette.warning + '1A', borderColor: palette.warning },
+            ]}>
+            <Icon name="shield" size={18} color={palette.warning} />
+            <View style={styles.warnText}>
+              <Text style={[styles.warnTitle, { color: theme.text }]}>
+                {t('reliability_warn_title')}
+              </Text>
+              <Text style={[styles.warnBody, { color: theme.subtext }]}>
+                {t('reliability_warn_body')}
+              </Text>
+            </View>
+            <Icon name="chevronRight" size={18} color={theme.subtext} />
+          </Pressable>
+        )}
+
         {!!snoozeBanner && (
           <View
             style={[
@@ -70,7 +98,7 @@ export function AlarmsListScreen({
             ]}>
             <Icon name="clock" size={16} color={theme.accent} />
             <Text style={[styles.snoozeBannerText, { color: theme.text }]}>
-              Snooze pending · rings at {snoozeBanner}
+              {t('snooze_pending', { time: snoozeBanner })}
             </Text>
           </View>
         )}
@@ -86,10 +114,10 @@ export function AlarmsListScreen({
                 <Icon name="bell" size={40} color={theme.accent} />
               </View>
               <Text style={[styles.emptyTitle, { color: theme.text }]}>
-                No alarms set.
+                {t('no_alarms_title')}
               </Text>
               <Text style={[styles.emptySubtitle, { color: theme.subtext }]}>
-                Add one to wake up in style.
+                {t('no_alarms_subtitle')}
               </Text>
             </View>
           ) : (
@@ -156,6 +184,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
+  },
+  warnBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  warnText: {
+    flex: 1,
+    gap: 1,
+  },
+  warnTitle: {
+    fontSize: font.body,
+    fontWeight: '700',
+  },
+  warnBody: {
+    fontSize: font.caption,
+    fontWeight: '500',
   },
   snoozeBannerText: {
     fontSize: font.body,

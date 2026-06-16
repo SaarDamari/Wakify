@@ -1,5 +1,7 @@
 import { Alarm } from '../types';
 import { jsDayToDayIndex } from './time';
+import { t } from '../i18n';
+import { TranslationKey } from '../i18n/en';
 
 export interface NextAlarmResult {
   alarm: Alarm;
@@ -66,13 +68,21 @@ function relativeLabel(date: Date, now: Date): string {
     (startOfDay(date).getTime() - startOfDay(now).getTime()) / DAY_MS,
   );
   if (dayDiff === 0) {
-    return 'Today';
+    return t('next_today');
   }
   if (dayDiff === 1) {
-    return 'Tomorrow';
+    return t('next_tomorrow');
   }
-  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return names[date.getDay()];
+  const keys: TranslationKey[] = [
+    'wday_sun',
+    'wday_mon',
+    'wday_tue',
+    'wday_wed',
+    'wday_thu',
+    'wday_fri',
+    'wday_sat',
+  ];
+  return t(keys[date.getDay()]);
 }
 
 export function computeNextAlarm(

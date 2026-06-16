@@ -1,0 +1,37 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#EE9387"/>
+      <stop offset="1" stop-color="#E76F61"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="512" cy="430" r="540" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.26"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Coral squircle background + warm sunrise glow -->
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="224" fill="url(#glow)"/>
+
+  <!-- Alarm clock (white) -->
+  <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- twin bells -->
+    <path d="M322 372 A86 86 0 0 1 494 372 Z" fill="#FFFFFF" stroke="none"/>
+    <path d="M530 372 A86 86 0 0 1 702 372 Z" fill="#FFFFFF" stroke="none"/>
+    <!-- striker handle between the bells -->
+    <path d="M432 312 Q512 252 592 312" stroke-width="26"/>
+    <!-- little legs -->
+    <path d="M402 760 L362 824" stroke-width="40"/>
+    <path d="M622 760 L662 824" stroke-width="40"/>
+    <!-- clock body -->
+    <circle cx="512" cy="566" r="206" fill="#FFFFFF" fill-opacity="0.10" stroke-width="34"/>
+  </g>
+
+  <!-- Music note inside the clock face -->
+  <g fill="#FFFFFF">
+    <ellipse cx="468" cy="650" rx="58" ry="44" transform="rotate(-20 468 650)"/>
+    <rect x="518" y="468" width="22" height="194" rx="11"/>
+    <path d="M540 468 q88 22 70 106 q-2 -54 -70 -66 z"/>
+  </g>
+</svg>

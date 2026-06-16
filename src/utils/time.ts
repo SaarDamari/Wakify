@@ -1,7 +1,11 @@
 import { DayIndex, TimeFormat } from '../types';
+import { isRTL } from '../i18n';
 
-// Labels in display order (Monday-first), matching DayIndex 0..6.
-export const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+// Labels indexed by DayIndex (Monday-first: 0=Mon … 6=Sun). Hebrew uses the
+// standard single-letter weekday abbreviations (Mon=ב … Sat=ש, Sun=א).
+const DAY_LABELS_EN = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const DAY_LABELS_HE = ['ב', 'ג', 'ד', 'ה', 'ו', 'ש', 'א'];
+export const DAY_LABELS = isRTL ? DAY_LABELS_HE : DAY_LABELS_EN;
 export const DAY_NAMES_SHORT = [
   'Mon',
   'Tue',
@@ -13,6 +17,10 @@ export const DAY_NAMES_SHORT = [
 ];
 
 export const ALL_DAYS: DayIndex[] = [0, 1, 2, 3, 4, 5, 6];
+
+// Display order for the weekday circles. Hebrew is Sunday-first (Sun, Mon … Sat,
+// as DayIndex values), so under forced RTL it reads right-to-left as א ב ג ד ה ו ש.
+export const DAY_ORDER: DayIndex[] = isRTL ? [6, 0, 1, 2, 3, 4, 5] : ALL_DAYS;
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
@@ -40,7 +48,8 @@ export function formatTime(
   minute: number,
   format: TimeFormat,
 ): string {
-  if (format === '24h') {
+  // AM/PM only in English; Hebrew is always 24h.
+  if (format === '24h' || isRTL) {
     return `${pad2(hour24)}:${pad2(minute)}`;
   }
   const { hour12, isPm } = to12h(hour24);

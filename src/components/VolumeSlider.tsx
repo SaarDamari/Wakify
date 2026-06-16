@@ -1,11 +1,5 @@
 import React, { useRef, useState } from 'react';
-import {
-  GestureResponderEvent,
-  PanResponder,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { PanResponder, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../context/SettingsContext';
 import { font, spacing } from '../theme/metrics';
 import { Icon } from './Icon';
@@ -25,7 +19,10 @@ const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 // per adjustment rather than on every move.
 export function VolumeSlider({ value, onChange }: VolumeSliderProps) {
   const theme = useTheme();
+  const trackRef = useRef<View>(null);
   const widthRef = useRef(0);
+  // Track's left edge in window coordinates — the basis for mapping the touch.
+  const trackLeftRef = useRef(0);
   const [pos, setPos] = useState(clamp01(value));
   const draggingRef = useRef(false);
   // Adjust the visual when the prop changes externally and we're not dragging
@@ -36,22 +33,37 @@ export function VolumeSlider({ value, onChange }: VolumeSliderProps) {
     setPos(clamp01(value));
   }
 
-  const ratioFromEvent = (e: GestureResponderEvent) => {
-    const w = widthRef.current || 1;
-    return clamp01(e.nativeEvent.locationX / w);
+  // Capture the track's absolute geometry; used to convert a touch's screen X
+  // into a 0–1 ratio. (Re-measured on grant in case the sheet moved.)
+  const measureTrack = () => {
+    trackRef.current?.measureInWindow((x, _y, w) => {
+      trackLeftRef.current = x;
+      if (w) {
+        widthRef.current = w;
+      }
+    });
   };
+
+  // Map an absolute (page) X to a 0–1 ratio. Using the gesture's absolute X
+  // (not nativeEvent.locationX, which is relative to whichever child — e.g. the
+  // moving thumb — is under the finger) is what keeps the value from bouncing.
+  // The track is forced LTR (see trackArea), so right is always 100%, including
+  // in Hebrew/RTL.
+  const ratioFromX = (absX: number) =>
+    clamp01((absX - trackLeftRef.current) / (widthRef.current || 1));
 
   const responder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: e => {
+      onPanResponderGrant: (_e, g) => {
         draggingRef.current = true;
-        setPos(ratioFromEvent(e));
+        measureTrack();
+        setPos(ratioFromX(g.x0));
       },
-      onPanResponderMove: e => setPos(ratioFromEvent(e)),
-      onPanResponderRelease: e => {
-        const next = ratioFromEvent(e);
+      onPanResponderMove: (_e, g) => setPos(ratioFromX(g.moveX)),
+      onPanResponderRelease: (_e, g) => {
+        const next = ratioFromX(g.moveX || g.x0);
         draggingRef.current = false;
         setPos(next);
         onChange(next);
@@ -69,9 +81,11 @@ export function VolumeSlider({ value, onChange }: VolumeSliderProps) {
       <View style={styles.row}>
         <Icon name="music" size={16} color={theme.subtext} />
         <View
+          ref={trackRef}
           style={styles.trackArea}
           onLayout={e => {
             widthRef.current = e.nativeEvent.layout.width;
+            measureTrack();
           }}
           {...responder.panHandlers}>
           <View
@@ -114,6 +128,9 @@ const styles = StyleSheet.create({
     flex: 1,
     height: THUMB,
     justifyContent: 'center',
+    // Keep the slider left-to-right (fill from left, right = 100%) even in RTL,
+    // so the fill anchors to the physical left and dragging right raises volume.
+    direction: 'ltr',
   },
   track: {
     height: TRACK_HEIGHT,

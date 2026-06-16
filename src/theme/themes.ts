@@ -40,6 +40,41 @@ const accents: Record<ThemeName, AccentFields> = {
     bannerFrom: palette.blueLight,
     bannerTo: palette.blueAccent,
   },
+  purple: {
+    name: 'purple',
+    accent: palette.purpleAccent,
+    accentDeep: palette.purpleDeep,
+    bannerFrom: palette.purpleLight,
+    bannerTo: palette.purpleAccent,
+  },
+  green: {
+    name: 'green',
+    accent: palette.greenAccent,
+    accentDeep: palette.greenDeep,
+    bannerFrom: palette.greenLight,
+    bannerTo: palette.greenAccent,
+  },
+  sunset: {
+    name: 'sunset',
+    accent: palette.sunsetAccent,
+    accentDeep: palette.sunsetDeep,
+    bannerFrom: palette.sunsetLight,
+    bannerTo: palette.sunsetAccent,
+  },
+  pink: {
+    name: 'pink',
+    accent: palette.pinkAccent,
+    accentDeep: palette.pinkDeep,
+    bannerFrom: palette.pinkLight,
+    bannerTo: palette.pinkAccent,
+  },
+  teal: {
+    name: 'teal',
+    accent: palette.tealAccent,
+    accentDeep: palette.tealDeep,
+    bannerFrom: palette.tealLight,
+    bannerTo: palette.tealAccent,
+  },
 };
 
 // Neutral (surface/text) fields, swapped by color scheme.

@@ -79,6 +79,11 @@ export async function disconnectSpotify(): Promise<void> {
   await clearTokens();
 }
 
+// The user's Liked Songs — the default Spotify context for a connected (free)
+// user when no genre maps to a playlist, so the alarm always wakes them with
+// Spotify rather than dropping to the ringtone.
+const LIKED_SONGS_URI = 'spotify:collection:tracks';
+
 // First chosen genre that has a mapped playlist URI (fallback: chill).
 // App Remote plays the full `spotify:playlist:<id>` URI directly.
 function playlistUriForGenres(genreIds: string[]): string | null {
@@ -96,15 +101,18 @@ function playlistUriForGenres(genreIds: string[]): string | null {
 // bundled tone.
 export async function playRandomTrackFromGenres(
   genreIds: string[],
+  explicitUri?: string | null,
 ): Promise<NowPlaying | null> {
-  log('spotify', 'playRandomTrackFromGenres start', { genreIds });
+  log('spotify', 'playRandomTrackFromGenres start', { genreIds, explicitUri });
   try {
-    const playlistUri = playlistUriForGenres(genreIds);
+    // Premium: a specific track/playlist URI the user picked takes priority.
+    // Otherwise resolve to a valid Spotify context: the genre playlist, or the
+    // user's Liked Songs as the default. (Free users keep genres; the default
+    // only kicks in when no genre maps to a playlist.) Never bail to the ringtone
+    // just for lack of a mapping — only a real connect/playback error returns null.
+    const playlistUri =
+      explicitUri || playlistUriForGenres(genreIds) || LIKED_SONGS_URI;
     log('spotify', 'playlistUri', playlistUri);
-    if (!playlistUri) {
-      warn('spotify', 'no playlist mapped for genres', genreIds);
-      return null;
-    }
 
     if (!RNSpotifyRemoteAppRemote?.connectWithoutAuth) {
       warn('spotify', 'native connectWithoutAuth unavailable (not linked / iOS)');

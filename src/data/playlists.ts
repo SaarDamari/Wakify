@@ -11,7 +11,7 @@ export interface Playlist {
   songs: Song[];
 }
 
-// Mock curated catalog — stands in for real Spotify/Apple playlists.
+// Mock curated catalog — stands in for real Spotify playlists.
 export const PLAYLISTS: Playlist[] = [
   {
     id: 'morning-chill',

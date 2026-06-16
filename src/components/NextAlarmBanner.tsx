@@ -7,6 +7,7 @@ import { useSettings, useTheme } from '../context/SettingsContext';
 import { palette } from '../theme/palette';
 import { font, radius, spacing, shadow } from '../theme/metrics';
 import { Icon } from './Icon';
+import { t } from '../i18n';
 
 interface NextAlarmBannerProps {
   result: NextAlarmResult | null;
@@ -26,19 +27,21 @@ export function NextAlarmBanner({ result }: NextAlarmBannerProps) {
     settings.timeFormat,
   );
 
+  const comment = result.alarm.label?.trim();
+
   return (
     <LinearGradient
       colors={[theme.bannerFrom, theme.bannerTo]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       style={styles.banner}>
-      <Text style={styles.kicker}>NEXT ALARM</Text>
+      <Text style={styles.kicker}>{t('next_alarm')}</Text>
       <Text style={styles.time}>{time}</Text>
       <View style={styles.subRow}>
         <Icon name="bell" size={16} color={palette.white} />
         <Text style={styles.label}>
           {result.label}
-          {result.alarm.label ? ` · ${result.alarm.label}` : ''}
+          {comment ? ` · ${comment}` : ''}
         </Text>
       </View>
     </LinearGradient>

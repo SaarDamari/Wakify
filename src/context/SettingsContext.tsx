@@ -28,6 +28,7 @@ interface SettingsContextValue {
   setDefaultGenres: (genres: string[]) => void;
   markPermissionPrimed: () => void;
   setAlarmVolume: (volume: number) => void;
+  setFallbackRingtone: (uri: string | null, title: string | null) => void;
 }
 
 const SettingsContext = createContext<SettingsContextValue | undefined>(
@@ -103,6 +104,12 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     [settings, update],
   );
 
+  const setFallbackRingtone = useCallback(
+    (fallbackRingtoneUri: string | null, fallbackRingtoneTitle: string | null) =>
+      update({ ...settings, fallbackRingtoneUri, fallbackRingtoneTitle }),
+    [settings, update],
+  );
+
   const value = useMemo<SettingsContextValue>(
     () => ({
       settings,
@@ -117,6 +124,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setDefaultGenres,
       markPermissionPrimed,
       setAlarmVolume,
+      setFallbackRingtone,
     }),
     [
       settings,
@@ -131,6 +139,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
       setDefaultGenres,
       markPermissionPrimed,
       setAlarmVolume,
+      setFallbackRingtone,
     ],
   );
 

@@ -1,6 +1,5 @@
-// Shared "now playing" track metadata returned by any music provider
-// (Spotify, Apple Music) so the ring screen can display what's actually playing
-// uniformly. `imageUrl` is null when the provider doesn't supply album art.
+// Shared "now playing" track metadata returned by Spotify so the ring screen can
+// display what's actually playing. `imageUrl` is null when no album art is supplied.
 export interface NowPlaying {
   title: string;
   artist: string;

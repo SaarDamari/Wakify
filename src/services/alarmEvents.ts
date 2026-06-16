@@ -1,3 +1,4 @@
+import { NativeModules } from 'react-native';
 import notifee, { EventType, Notification } from '@notifee/react-native';
 import { Alarm } from '../types';
 import { rescheduleAfterFire, scheduleNudge } from './notifications';
@@ -47,9 +48,18 @@ export function registerAlarmBackgroundHandler(): void {
         const alarm = alarmFromNotification(detail.notification);
         if (alarm) {
           // Remember this fire so the React tree opens the ring screen (and
-          // starts Spotify/tone) once the full-screen intent foregrounds the
-          // app — works whether the app was backgrounded or killed.
+          // starts Spotify/tone) once the app foregrounds — works whether the
+          // app was backgrounded or killed.
           await setPendingRing(alarm);
+          // Force the screen on + bring the ring activity to the front. This is
+          // the belt-and-suspenders path for when Android 14 has demoted the
+          // full-screen intent to a banner (needs the "display over other apps"
+          // grant). Guarded — a missing module/permission must never throw here.
+          try {
+            NativeModules.WakifyAlarm?.launchAlarmActivity?.();
+          } catch (e) {
+            console.warn('[alarm] launchAlarmActivity failed', e);
+          }
           await rescheduleAfterFire(alarm);
           scheduleNextNudge(
             alarm,
