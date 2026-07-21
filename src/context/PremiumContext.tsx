@@ -16,6 +16,11 @@ interface PremiumContextValue {
 
 const PremiumContext = createContext<PremiumContextValue | undefined>(undefined);
 
+// Temporary: treat everyone as Premium while billing isn't wired yet. Flip to
+// false (or remove) to restore the real entitlement. The rest of the logic
+// (storage, setPremium, paywall) stays intact.
+const FORCE_PREMIUM = true;
+
 // Tracks the "Wakify Premium" entitlement. Purchase is mocked for now
 // (setPremium just flips + persists the flag); when wiring RevenueCat, replace
 // the storage-backed value with the entitlement from Purchases.getCustomerInfo()
@@ -38,7 +43,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<PremiumContextValue>(
-    () => ({ isPremium, hydrated, setPremium }),
+    () => ({ isPremium: FORCE_PREMIUM || isPremium, hydrated, setPremium }),
     [isPremium, hydrated, setPremium],
   );
 

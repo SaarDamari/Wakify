@@ -9,12 +9,13 @@ const KEYS = {
 
 export const DEFAULT_SETTINGS: Settings = {
   timeFormat: '12h',
-  theme: 'coral',
+  theme: 'green',
   musicProvider: null,
   onboarded: false,
   defaultGenres: ['chill', 'pop'],
   permissionPrimed: false,
-  alarmVolume: 1, // max by default so alarms reliably wake the user
+  // Slider starts at 0; a floor (effectiveVolume) keeps it audible even at 0.
+  alarmVolume: 0,
   fallbackRingtoneUri: null, // null => OS default alarm sound
   fallbackRingtoneTitle: null,
 };

@@ -1,4 +1,5 @@
 import { NativeModules, Platform } from 'react-native';
+import { effectiveVolume } from '../utils/volume';
 
 // Bridge to the native WakifyAlarm module for system ringtones (Android only).
 // The fallback alarm sound is a content:// ringtone URI, which react-native-sound
@@ -37,7 +38,7 @@ export async function listRingtones(): Promise<Ringtone[]> {
 // Loop a ringtone at the given volume (0–1). Empty uri => OS default alarm.
 export function playRingtone(uri: string | null, volume: number): void {
   try {
-    Native?.playRingtone?.(uri ?? '', Math.max(0, Math.min(1, volume)));
+    Native?.playRingtone?.(uri ?? '', effectiveVolume(volume));
   } catch {
     // best-effort
   }

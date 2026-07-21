@@ -7,6 +7,8 @@ import {
   stopRingtone,
 } from './ringtones';
 
+import { effectiveVolume } from '../utils/volume';
+
 // Android loads res/raw by basename (no extension); iOS by bundled filename.
 const FILE = Platform.OS === 'android' ? 'alarm' : 'alarm.wav';
 
@@ -19,7 +21,7 @@ let savedVolume: number | null = null;
 // default max) so the alarm is heard. Setting the stream volume scales BOTH the
 // bundled tone and Spotify. We save the prior volume first to restore it after.
 export async function raiseAlarmVolume(level: number = 1): Promise<void> {
-  const target = Math.max(0, Math.min(1, level));
+  const target = effectiveVolume(level);
   try {
     if (savedVolume == null) {
       const { volume } = await VolumeManager.getVolume();

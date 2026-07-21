@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Dimensions, StyleSheet, Text, TextInput, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { TimeFormat } from '../types';
 import { to12h, to24h } from '../utils/time';
 import { useTheme } from '../context/SettingsContext';
@@ -177,7 +178,7 @@ export function TimeWheelPicker({
 
   return (
     <View style={[styles.wrapper, { height: containerHeight }]}>
-      {/* Shared coral selection band spanning all columns, behind the text. */}
+      {/* Selection pill behind the centered numbers. */}
       <View
         pointerEvents="none"
         style={[
@@ -185,13 +186,12 @@ export function TimeWheelPicker({
           {
             top: bandTop,
             height: ITEM_HEIGHT,
-            backgroundColor: theme.accent + '14', // ~8% alpha tint
-            borderColor: theme.accent + '40',
+            backgroundColor: theme.accent + '1F', // subtle accent fill
           },
         ]}
       />
 
-      <View style={[styles.columns, isRTL && styles.columnsRtl]}>
+      <View style={styles.columns}>
         {renderEditableColumn(
           'hour',
           <WheelPicker
@@ -239,10 +239,21 @@ export function TimeWheelPicker({
             visibleRows={VISIBLE_ROWS}
             align="center"
             width={72}
-            loop
           />
         )}
       </View>
+
+      {/* Edge fades so numbers dissolve toward the top/bottom for a clean look. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.background, theme.background + '00']}
+        style={[styles.fade, { top: 0, height: bandTop }]}
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.background + '00', theme.background]}
+        style={[styles.fade, { bottom: 0, height: bandTop }]}
+      />
     </View>
   );
 }
@@ -253,20 +264,21 @@ const styles = StyleSheet.create({
   },
   band: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    left: 8,
+    right: 8,
+    borderRadius: 16,
   },
   columns: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    // Always lay out hour : minute left-to-right, regardless of LTR/RTL.
+    direction: 'ltr',
   },
-  // Keep the clock left-to-right (hour : minute) even under RTL; row-reverse
-  // cancels the automatic RTL flip so the columns aren't swapped.
-  columnsRtl: {
-    flexDirection: 'row-reverse',
+  fade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
   },
   colon: {
     fontSize: SELECTED_FONT,

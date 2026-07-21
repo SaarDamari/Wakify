@@ -18,6 +18,9 @@ export const he: Record<TranslationKey, string> = {
   next_alarm: 'הצלצול הבא',
   next_today: 'היום',
   next_tomorrow: 'מחר',
+  next_in_hm: 'בעוד {hours} שע׳ {minutes} דק׳',
+  next_in_min: 'בעוד {minutes} דק׳',
+  next_in_soon: 'בעוד פחות מדקה',
   wday_sun: 'יום א׳',
   wday_mon: 'יום ב׳',
   wday_tue: 'יום ג׳',
@@ -106,6 +109,7 @@ export const he: Record<TranslationKey, string> = {
   snooze_minutes: 'נודניק {minutes} דק׳',
   stop: 'עצירה',
   now_playing: 'מתנגן כעת',
+  starting_music: 'מתחילים את המוזיקה…',
   default_sound_title: 'צליל התראה ברירת מחדל',
   default_sound_subtitle: "בחרו ז'אנרים להשכמה כדי לנגן שירים",
 
@@ -147,6 +151,14 @@ export const he: Record<TranslationKey, string> = {
     'כדי להעיר אתכם עם מוזיקה נהדרת, נדרשת הרשאה לשליחת התראות והשמעת צלילים.',
   allow: 'אישור',
   not_now: 'לא עכשיו',
+
+  spotify_expired_title: 'התחברו מחדש ל-Spotify',
+  spotify_expired_body:
+    'החיבור ל-Spotify פג, אז נותקתם. התחברו מחדש כדי להמשיך להתעורר עם המוזיקה שלכם — עד אז ההתראות ישתמשו ברינגטון.',
+  reconnect: 'התחברות מחדש',
+  spotify_connect_failed_title: 'לא הצלחנו להתחבר ל-Spotify',
+  spotify_connect_failed_body:
+    'ודאו שאפליקציית Spotify מותקנת ומחוברת, ושיש לכם Spotify Premium, ואז נסו שוב.',
 
   // Exit confirm
   exit_title: 'בטוחים שתרצו לצאת?',

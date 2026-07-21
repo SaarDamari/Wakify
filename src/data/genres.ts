@@ -184,6 +184,17 @@ export function resolveGenres(
   return alarm.genres ?? defaultGenres;
 }
 
+// Uniformly pick one genre id among the valid ids (each chosen genre equally
+// likely), or null if none resolve. Used to choose a single genre that drives
+// both the displayed label and what actually plays.
+export function pickRandomGenreId(ids: string[]): string | null {
+  const valid = ids.filter(id => getGenre(id));
+  if (valid.length === 0) {
+    return null;
+  }
+  return valid[Math.floor(Math.random() * valid.length)];
+}
+
 // Random song across the pool of all songs in the given genres.
 export function pickRandomSongFromGenres(
   ids: string[],

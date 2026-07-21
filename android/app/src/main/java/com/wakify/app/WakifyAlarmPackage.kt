@@ -1,4 +1,4 @@
-package com.wakify
+package com.wakify.app
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

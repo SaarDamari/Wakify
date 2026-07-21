@@ -28,6 +28,15 @@ const FG_DENSITIES = {
   'mipmap-xxxhdpi': 432,
 };
 
+// Status-bar notification icon (24dp): white silhouette on transparent.
+const NOTIF_DENSITIES = {
+  'drawable-mdpi': 24,
+  'drawable-hdpi': 36,
+  'drawable-xhdpi': 48,
+  'drawable-xxhdpi': 72,
+  'drawable-xxxhdpi': 96,
+};
+
 const svg = fs.readFileSync(SRC);
 const fgSvg = fs.readFileSync(FG_SRC);
 const monoSvg = fs.readFileSync(MONO_SRC);
@@ -75,6 +84,17 @@ async function run() {
       .png()
       .toFile(path.join(outDir, 'ic_launcher_monochrome.png'));
     console.log(`${dir} -> ${size}px (foreground + monochrome)`);
+  }
+
+  // Status-bar notification icon (white silhouette on transparent).
+  for (const [dir, size] of Object.entries(NOTIF_DENSITIES)) {
+    const outDir = path.join(RES, dir);
+    fs.mkdirSync(outDir, { recursive: true });
+    await sharp(monoSvg, { density: 384 })
+      .resize(size, size)
+      .png()
+      .toFile(path.join(outDir, 'ic_stat_wakify.png'));
+    console.log(`${dir} -> ${size}px (notification icon)`);
   }
 }
 

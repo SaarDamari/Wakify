@@ -16,6 +16,9 @@ export const en = {
   next_alarm: 'NEXT ALARM',
   next_today: 'Today',
   next_tomorrow: 'Tomorrow',
+  next_in_hm: 'in {hours}h {minutes}m',
+  next_in_min: 'in {minutes} min',
+  next_in_soon: 'in <1 min',
   wday_sun: 'Sun',
   wday_mon: 'Mon',
   wday_tue: 'Tue',
@@ -104,6 +107,7 @@ export const en = {
   snooze_minutes: 'Snooze {minutes} min',
   stop: 'Stop',
   now_playing: 'Now Playing',
+  starting_music: 'Starting your music…',
   default_sound_title: 'Default alarm sound',
   default_sound_subtitle: 'Pick wake-up genres to play songs',
 
@@ -146,6 +150,15 @@ export const en = {
     'To wake you up with great music, we need your permission to send notifications and sound alarms.',
   allow: 'Allow',
   not_now: 'Not now',
+
+  // Spotify session expired
+  spotify_expired_title: 'Reconnect Spotify',
+  spotify_expired_body:
+    'Your Spotify session expired, so we signed you out. Reconnect to keep waking up to your music — until then, alarms use your ringtone.',
+  reconnect: 'Reconnect',
+  spotify_connect_failed_title: "Couldn't connect to Spotify",
+  spotify_connect_failed_body:
+    'Make sure the Spotify app is installed, logged in, and that you have Spotify Premium, then try again.',
 
   // Exit confirm
   exit_title: 'Are you sure you want to leave?',

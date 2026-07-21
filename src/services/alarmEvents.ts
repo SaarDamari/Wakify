@@ -1,7 +1,11 @@
 import { NativeModules } from 'react-native';
 import notifee, { EventType, Notification } from '@notifee/react-native';
 import { Alarm } from '../types';
-import { rescheduleAfterFire, scheduleNudge } from './notifications';
+import {
+  rescheduleAfterFire,
+  scheduleNudge,
+  startRingForegroundService,
+} from './notifications';
 import { setPendingRing } from './pendingRing';
 
 // Recover the Alarm we stashed in the notification payload when scheduling.
@@ -60,6 +64,10 @@ export function registerAlarmBackgroundHandler(): void {
           } catch (e) {
             console.warn('[alarm] launchAlarmActivity failed', e);
           }
+          // Keep audio + process alive on a quiet service notification (the alert
+          // itself auto-hides). Allowed from the background here: the app holds
+          // SYSTEM_ALERT_WINDOW + exact-alarm and just launched the ring activity.
+          await startRingForegroundService();
           await rescheduleAfterFire(alarm);
           scheduleNextNudge(
             alarm,

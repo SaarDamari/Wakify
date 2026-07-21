@@ -19,6 +19,9 @@ import { AlarmRingScreen } from './src/screens/AlarmRingScreen';
 import notifee, { EventType } from '@notifee/react-native';
 import { PermissionPrimerModal } from './src/components/PermissionPrimerModal';
 import { AlarmReliabilityModal } from './src/components/AlarmReliabilityModal';
+import { SpotifySessionExpiredModal } from './src/components/SpotifySessionExpiredModal';
+import { disconnectSpotify } from './src/services/spotifyService';
+import { onSpotifySessionExpired } from './src/services/spotifyAuthEvents';
 import {
   getReliabilityStatus,
   isReliabilityComplete,
@@ -30,6 +33,7 @@ import {
   rescheduleAfterFire,
   scheduleSnooze,
   showSnoozePending,
+  startRingForegroundService,
   syncScheduledAlarms,
 } from './src/services/notifications';
 import {
@@ -60,7 +64,8 @@ function App() {
 }
 
 function Root() {
-  const { settings, hydrated, theme, markPermissionPrimed } = useSettings();
+  const { settings, hydrated, theme, markPermissionPrimed, disconnectMusic } =
+    useSettings();
   const { alarms } = useAlarms();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -70,6 +75,7 @@ function Root() {
   const [reliabilityVisible, setReliabilityVisible] = useState(false);
   const [reliabilityOk, setReliabilityOk] = useState(true);
   const [snoozeBanner, setSnoozeBanner] = useState<string | null>(null);
+  const [spotifyExpiredVisible, setSpotifyExpiredVisible] = useState(false);
 
   const onRing = useCallback((alarm: Alarm) => setRinging(alarm), []);
   const rearm = useForegroundAlarm(alarms, onRing);
@@ -84,6 +90,19 @@ function Root() {
   useEffect(() => {
     ensureAlarmChannel();
   }, []);
+
+  // When the Spotify refresh token dies (invalid_grant), the auth service has
+  // already cleared the token; here we flip the app to disconnected and prompt
+  // the user to log in again. Alarms keep ringing via the ringtone fallback.
+  useEffect(
+    () =>
+      onSpotifySessionExpired(() => {
+        disconnectMusic();
+        void disconnectSpotify();
+        setSpotifyExpiredVisible(true);
+      }),
+    [disconnectMusic],
+  );
 
   // Track whether the alarm-reliability grants (full-screen intent + overlay) are
   // in place, so the home screen can surface a banner. Re-check when returning
@@ -140,6 +159,14 @@ function Root() {
       sub.remove();
     };
   }, []);
+
+  // While a ring is showing in the foreground, keep the media foreground service
+  // running (covers the in-app timer, snooze/nudge re-rings and pending-ring).
+  useEffect(() => {
+    if (ringing) {
+      startRingForegroundService();
+    }
+  }, [ringing]);
 
   // Foreground notifee events: reschedule repeats and open the ring on tap.
   // (Fresh in-app ringing while open is driven by useForegroundAlarm; a snooze
@@ -320,6 +347,14 @@ function Root() {
       <AlarmReliabilityModal
         visible={reliabilityVisible}
         onClose={closeReliability}
+      />
+      <SpotifySessionExpiredModal
+        visible={spotifyExpiredVisible}
+        onReconnect={() => {
+          setSpotifyExpiredVisible(false);
+          setSettingsVisible(true);
+        }}
+        onDismiss={() => setSpotifyExpiredVisible(false)}
       />
       {ringing && (
         <AlarmRingScreen

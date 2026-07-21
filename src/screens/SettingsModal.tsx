@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   Modal,
   Pressable,
@@ -93,11 +94,16 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     setConnecting(provider);
     try {
       // Real OAuth — opens the Spotify login page. Persist only on success.
-      const ok = await spotify.connect();
-      log('settings', 'spotify.connect() →', ok);
-      if (ok) {
+      const err = await spotify.connect();
+      log('settings', 'spotify.connect() →', err ? err.message : 'ok');
+      if (!err) {
         connectMusic('spotify');
         log('settings', "connectMusic('spotify') persisted");
+      } else {
+        Alert.alert(
+          t('spotify_connect_failed_title'),
+          err.message || t('spotify_connect_failed_body'),
+        );
       }
     } finally {
       setConnecting(null);

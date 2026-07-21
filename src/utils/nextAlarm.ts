@@ -9,7 +9,23 @@ export interface NextAlarmResult {
   label: string; // "Today" | "Tomorrow" | "Mon" ...
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Minutes-level countdown for the next-alarm banner: "in 5h 12m" / "in 43 min"
+// / "in <1 min". Rounds DOWN to whole minutes remaining so it never over-counts
+// (e.g. 80s → "1 min", not "2 min"). Caller guarantees ms > 0.
+export function formatCountdown(ms: number): string {
+  const totalMin = Math.floor(ms / 60_000);
+  if (totalMin <= 0) {
+    return t('next_in_soon');
+  }
+  if (totalMin < 60) {
+    return t('next_in_min', { minutes: totalMin });
+  }
+  const hours = Math.floor(totalMin / 60);
+  const minutes = totalMin % 60;
+  return t('next_in_hm', { hours, minutes });
+}
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());

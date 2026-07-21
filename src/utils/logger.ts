@@ -4,7 +4,7 @@
 // Diagnostics are OFF by default to keep the console clean. Flip ENABLED to true
 // (or gate on __DEV__) to surface the [Wakify] trace when debugging playback/auth.
 // NOTE: never pass raw tokens here — log booleans/lengths only.
-const ENABLED = false;
+const ENABLED = __DEV__;
 const TAG = '[Wakify]';
 
 export const log = (scope: string, ...args: unknown[]): void => {

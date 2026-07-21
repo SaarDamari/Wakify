@@ -47,6 +47,23 @@ const CONNECTED_MARKER: SpotifyTokens = {
   ).toISOString(),
 };
 
+// Reject if a promise hasn't settled within `ms` so the UI never hangs forever.
+function withTimeout<T>(p: Promise<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    p.then(
+      v => {
+        clearTimeout(timer);
+        resolve(v);
+      },
+      e => {
+        clearTimeout(timer);
+        reject(e);
+      },
+    );
+  });
+}
+
 // Authorize with Spotify via the App Remote auth view (Settings-only — the
 // single user-facing consent). The Spotify app renders the consent natively and
 // registers the on-device grant so alarm-time silent connects are allowed. This
@@ -59,13 +76,23 @@ export async function connectSpotify(): Promise<SpotifyTokens> {
     throw err;
   }
   try {
-    await RNSpotifyRemoteAppRemote.connectWithAuthView(CLIENT_ID, REDIRECT_URI);
+    // Safety net: the native auth-view callback occasionally never fires (no
+    // Spotify app, wrong account, redirect/client-id mismatch), which would spin
+    // the UI forever. Time out so the user sees an error instead of infinite load.
+    await withTimeout(
+      RNSpotifyRemoteAppRemote.connectWithAuthView(CLIENT_ID, REDIRECT_URI),
+      30000,
+      'Spotify sign-in timed out. Make sure the Spotify app is installed and logged in, then try again.',
+    );
     await saveTokens(CONNECTED_MARKER); // "connected" flag for the UI
     log('spotify', 'connectSpotify ok (App Remote authorized + connected)');
     return CONNECTED_MARKER;
   } catch (e) {
-    warn('spotify', 'connectSpotify FAILED', (e as Error)?.message, e);
-    throw e;
+    const err = e as { message?: string; code?: string | number };
+    warn('spotify', 'connectSpotify FAILED', err?.code, err?.message, e);
+    // Surface the concrete reason (native code + message) to the UI alert.
+    const detail = [err?.code, err?.message].filter(Boolean).join(': ');
+    throw new Error(detail || 'Unknown Spotify error');
   }
 }
 
@@ -84,14 +111,17 @@ export async function disconnectSpotify(): Promise<void> {
 // Spotify rather than dropping to the ringtone.
 const LIKED_SONGS_URI = 'spotify:collection:tracks';
 
-// First chosen genre that has a mapped playlist URI (fallback: chill).
-// App Remote plays the full `spotify:playlist:<id>` URI directly.
+// A RANDOM chosen genre that has a mapped playlist URI (fallback: chill), so we
+// don't always wake the user with the first genre. App Remote plays the full
+// `spotify:playlist:<id>` URI directly.
 function playlistUriForGenres(genreIds: string[]): string | null {
-  return (
-    genreIds.map(id => getGenre(id)?.spotifyPlaylist).find(Boolean) ??
-    getGenre('chill')?.spotifyPlaylist ??
-    null
-  );
+  const withPlaylist = genreIds
+    .map(id => getGenre(id)?.spotifyPlaylist)
+    .filter((u): u is string => !!u);
+  if (withPlaylist.length) {
+    return withPlaylist[Math.floor(Math.random() * withPlaylist.length)];
+  }
+  return getGenre('chill')?.spotifyPlaylist ?? null;
 }
 
 // SILENT playback for the alarm trigger — never shows UI. Connects to the

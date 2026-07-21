@@ -288,11 +288,26 @@ export function AlarmEditModal({
                     android_ripple={{ color: palette.ripple }}
                     style={[
                       styles.musicRow,
-                      { borderColor: theme.cardBorder, backgroundColor: theme.card },
+                      !!draft.spotifyUri && styles.inactiveRow,
+                      {
+                        borderColor: draft.spotifyUri
+                          ? theme.cardBorder
+                          : theme.accent,
+                        backgroundColor: theme.card,
+                      },
                     ]}>
                     <Icon name="music" size={18} color={theme.subtext} />
-                    <Text style={[styles.musicName, { color: theme.text }]}>
-                      {resolvedGenresText}
+                    <Text
+                      style={[
+                        styles.musicName,
+                        // When a Spotify playlist is the active source, show a
+                        // muted placeholder so the user sees genres aren't in use.
+                        { color: draft.spotifyUri ? theme.subtext : theme.text },
+                      ]}
+                      numberOfLines={1}>
+                      {draft.spotifyUri
+                        ? t('wake_up_genres')
+                        : resolvedGenresText}
                     </Text>
                     <Icon name="chevronRight" size={18} color={theme.subtext} />
                   </Pressable>
@@ -308,8 +323,15 @@ export function AlarmEditModal({
                     android_ripple={{ color: palette.ripple }}
                     style={[
                       styles.musicRow,
+                      styles.spotifyRow,
                       !isPremium && styles.lockedRow,
-                      { borderColor: theme.cardBorder, backgroundColor: theme.card },
+                      {
+                        borderColor:
+                          isPremium && draft.spotifyUri
+                            ? theme.accent
+                            : theme.cardBorder,
+                        backgroundColor: theme.card,
+                      },
                     ]}>
                     <Icon name="crown" size={18} color={theme.subtext} />
                     <Text
@@ -463,7 +485,13 @@ export function AlarmEditModal({
           value={draft.genres ?? null}
           allowUseDefault
           onChange={genres =>
-            setDraft(prev => ({ ...prev, genres: genres ?? undefined }))
+            // Choosing genres switches the source away from a Spotify playlist.
+            setDraft(prev => ({
+              ...prev,
+              genres: genres ?? undefined,
+              spotifyUri: undefined,
+              spotifyUriName: undefined,
+            }))
           }
           onClose={() => setGenreVisible(false)}
         />
@@ -612,6 +640,12 @@ const styles = StyleSheet.create({
   lockedRow: {
     marginTop: spacing.sm,
     opacity: 0.7,
+  },
+  spotifyRow: {
+    marginTop: spacing.sm,
+  },
+  inactiveRow: {
+    opacity: 0.5,
   },
   premiumPill: {
     borderRadius: radius.pill,

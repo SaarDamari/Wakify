@@ -1,4 +1,4 @@
-package com.wakify
+package com.wakify.app
 
 import android.app.KeyguardManager
 import android.content.Context

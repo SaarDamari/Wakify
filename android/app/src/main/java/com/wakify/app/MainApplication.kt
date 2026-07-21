@@ -1,4 +1,4 @@
-package com.wakify
+package com.wakify.app
 
 import android.app.Application
 import com.facebook.react.PackageList

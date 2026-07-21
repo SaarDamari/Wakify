@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -37,9 +38,15 @@ export function ConnectScreen() {
     setConnecting(provider);
     try {
       // Real OAuth — opens the Spotify login page. Advance only on success.
-      if (await spotify.connect()) {
+      const err = await spotify.connect();
+      if (!err) {
         connectMusic('spotify');
         setStep('genres');
+      } else {
+        Alert.alert(
+          t('spotify_connect_failed_title'),
+          err.message || t('spotify_connect_failed_body'),
+        );
       }
     } finally {
       setConnecting(null);

@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { NextAlarmResult } from '../utils/nextAlarm';
+import { DAY_MS, NextAlarmResult, formatCountdown } from '../utils/nextAlarm';
 import { formatTime } from '../utils/time';
 import { useSettings, useTheme } from '../context/SettingsContext';
 import { palette } from '../theme/palette';
@@ -17,6 +17,14 @@ export function NextAlarmBanner({ result }: NextAlarmBannerProps) {
   const theme = useTheme();
   const { settings } = useSettings();
 
+  // Tick every second so the countdown flips exactly on the minute (and the
+  // final "<1 min" window is live) instead of lagging up to half a minute.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1_000);
+    return () => clearInterval(id);
+  }, []);
+
   if (!result) {
     return null;
   }
@@ -29,6 +37,11 @@ export function NextAlarmBanner({ result }: NextAlarmBannerProps) {
 
   const comment = result.alarm.label?.trim();
 
+  // Within the next 24h, show a live countdown; otherwise the day label.
+  const msUntil = result.date.getTime() - now;
+  const primary =
+    msUntil > 0 && msUntil < DAY_MS ? formatCountdown(msUntil) : result.label;
+
   return (
     <LinearGradient
       colors={[theme.bannerFrom, theme.bannerTo]}
@@ -40,7 +53,7 @@ export function NextAlarmBanner({ result }: NextAlarmBannerProps) {
       <View style={styles.subRow}>
         <Icon name="bell" size={16} color={palette.white} />
         <Text style={styles.label}>
-          {result.label}
+          {primary}
           {comment ? ` · ${comment}` : ''}
         </Text>
       </View>

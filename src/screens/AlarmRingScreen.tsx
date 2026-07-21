@@ -11,9 +11,14 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Alarm } from '../types';
-import { useSettings } from '../context/SettingsContext';
+import { useSettings, useTheme } from '../context/SettingsContext';
 import { usePremium } from '../context/PremiumContext';
-import { pickRandomSongFromGenres, resolveGenres, genreLabel } from '../data/genres';
+import {
+  pickRandomGenreId,
+  pickRandomSongFromGenres,
+  resolveGenres,
+  genreLabel,
+} from '../data/genres';
 import { formatTime } from '../utils/time';
 import { startVibration, stopVibration } from '../utils/vibration';
 import {
@@ -41,18 +46,36 @@ const TRACK_SECONDS = 24; // simulated song length for the progress bar
 export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProps) {
   const insets = useSafeAreaInsets();
   const { settings } = useSettings();
+  const theme = useTheme();
   const { isPremium } = usePremium();
 
-  // Local placeholder pick — used only as a visual preview until/unless a real
-  // Spotify track starts playing (then `nowPlaying` overrides it).
-  const [pick] = useState(() =>
-    pickRandomSongFromGenres(resolveGenres(alarm, settings.defaultGenres)),
-  );
+  // Pick ONE random genre among the chosen set up front; it drives the label,
+  // the gradient, and the playlist that actually plays, so they always match.
+  const [pick] = useState(() => {
+    const ids = resolveGenres(alarm, settings.defaultGenres);
+    const gid = pickRandomGenreId(ids);
+    return pickRandomSongFromGenres(gid ? [gid] : ids);
+  });
   const genre = pick?.genre ?? null;
 
-  // Real track playing via Spotify, when connected + playable. null => tone path.
+  // Real track playing via Spotify, when connected + playable.
   const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
-  const song = nowPlaying ?? (pick?.song ?? null);
+  // Drives the "Now Playing" card: connecting to Spotify, the real Spotify
+  // track, or the bundled tone. We never show a random placeholder song, so the
+  // title can't flash a wrong track before the real one loads.
+  const [audioMode, setAudioMode] = useState<'loading' | 'spotify' | 'tone'>(
+    settings.musicProvider === 'spotify' ? 'loading' : 'tone',
+  );
+
+  // What's driving playback, for the label: the user's own Spotify playlist
+  // (premium) takes precedence and is labeled by its name — NOT by a random
+  // genre, which isn't what's playing. Otherwise use the picked genre.
+  const usingPlaylist = isPremium && !!alarm.spotifyUri;
+  const sourceLabel = usingPlaylist
+    ? alarm.spotifyUriName ?? null
+    : genre
+    ? genreLabel(genre)
+    : null;
 
   // Vibrate for the duration of the ring; cancel on Stop/Snooze (unmount).
   useEffect(() => {
@@ -76,7 +99,11 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
         // Premium-only: honor a specific song/playlist the user picked for this
         // alarm; free/lapsed users fall back to genres (then Liked Songs).
         const explicitUri = isPremium ? alarm.spotifyUri : undefined;
-        const np = await playRandomTrackFromGenres(genres, explicitUri);
+        // Play the same single genre shown in the label (not the first of the list).
+        const np = await playRandomTrackFromGenres(
+          genre ? [genre.id] : genres,
+          explicitUri,
+        );
         if (cancelled) {
           log('ring', 'cancelled before audio resolved');
           return;
@@ -84,9 +111,11 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
         log('ring', 'spotify result', np);
         if (np) {
           setNowPlaying(np); // show the real track that's now playing
+          setAudioMode('spotify');
         } else {
           warn('ring', 'spotify returned null → ringtone fallback');
           // fallback ringtone (no device / Premium / token)
+          setAudioMode('tone');
           playAlarmSound(settings.fallbackRingtoneUri, settings.alarmVolume);
         }
       } else {
@@ -124,6 +153,8 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
   }, [progress]);
 
   const colors = genre ? genre.colors : [palette.coralLight, palette.coralDeep];
+  // Full-screen ring background follows the app's selected theme color.
+  const bgColors = [theme.bannerFrom, theme.bannerTo];
   const time = formatTime(now.getHours(), now.getMinutes(), settings.timeFormat);
 
   const width = progress.interpolate({
@@ -134,7 +165,7 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
   return (
     <Modal visible transparent animationType="fade" onRequestClose={onStop}>
       <LinearGradient
-        colors={colors}
+        colors={bgColors}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={styles.container}>
@@ -167,23 +198,30 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
             )}
           </View>
 
-          {song ? (
+          {audioMode === 'spotify' ? (
             <>
               <Text style={styles.songTitle} numberOfLines={1}>
-                {song.title}
+                {nowPlaying?.title || sourceLabel || t('now_playing')}
               </Text>
               <Text style={styles.songArtist} numberOfLines={1}>
-                {song.artist}
+                {nowPlaying?.artist ?? ''}
               </Text>
               <Text style={styles.songAlbum} numberOfLines={1}>
-                {song.album}
+                {nowPlaying?.album ?? ''}
               </Text>
               <View style={styles.nowPlaying}>
                 <Icon name="play" size={12} color={palette.white} />
                 <Text style={styles.nowPlayingText}>
-                  {genre ? `${genreLabel(genre)} · ` : ''}{t('now_playing')}
+                  {sourceLabel ? `${sourceLabel} · ` : ''}{t('now_playing')}
                 </Text>
               </View>
+            </>
+          ) : audioMode === 'loading' ? (
+            <>
+              <Text style={styles.songTitle} numberOfLines={1}>
+                {sourceLabel ?? t('now_playing')}
+              </Text>
+              <Text style={styles.songArtist}>{t('starting_music')}</Text>
             </>
           ) : (
             <>
@@ -215,7 +253,7 @@ export function AlarmRingScreen({ alarm, onStop, onSnooze }: AlarmRingScreenProp
             onPress={onStop}
             android_ripple={{ color: palette.ripple }}
             style={({ pressed }) => [styles.stop, pressed && { opacity: 0.9 }]}>
-            <Text style={[styles.stopText, { color: colors[1] }]}>
+            <Text style={[styles.stopText, { color: bgColors[1] }]}>
               {t('stop')}
             </Text>
           </Pressable>
