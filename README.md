@@ -1,11 +1,33 @@
-# Wakify — APK Build & Spotify Setup Guide
+# Wakify
+
+**Wakify** is a music alarm clock — it wakes you to your favorite music instead of a generic beep. Set an alarm and it rings by playing a real Spotify track: a song from a curated genre mix, or one of your own Spotify playlists. If music can't play, it falls back to a system ringtone so you always wake up.
+
+Built with bare **React Native** (New Architecture / Fabric) for **Android and iOS**.
+
+## Features
+
+- 🎵 **Wake up to Spotify** — plays a real track at alarm time via Spotify's App Remote SDK (requires the Spotify app + Premium).
+- 🎧 **Genre mix or your own playlist** — pick a curated wake-up genre, or (premium) any of your own Spotify playlists. The two are an either/or per alarm.
+- ⏰ **Reliable background alarms** — full-screen, over-the-lock-screen alarms via Notifee, exact even in Doze; survive the app being closed or the phone asleep.
+- 😴 **Snooze & nudging** — snooze re-rings at the OS level; an ignored alarm keeps nudging until you stop it.
+- 📳 **Vibration control** — Gentle / Medium / Strong, or fully off (truly silent, notification included).
+- ⏳ **Live next-alarm countdown** — the home banner counts down the minutes to your next alarm.
+- 🌗 **Light/Dark** following the OS, with several accent color themes.
+- 🌍 **English & Hebrew** (full RTL support).
+- 🔔 **Ringtone fallback** — if Spotify can't play (no Premium, session expired, offline), a system ringtone rings instead.
+
+## Requirements to use it
+
+Wakify plays music through Spotify's **App Remote SDK**, so the person using the app needs the **Spotify app installed + logged in** and a **Spotify Premium** account. While the Spotify project is in Development Mode, their account must also be **added to the dashboard** (see [Section 3](#3-make-it-work-for-a-specific-person-the-important-part)).
+
+---
+
+# Build & Spotify Setup Guide
 
 This guide covers two things:
 
 1. **Building the Android APK** and installing it on a phone.
 2. **Setting up the Spotify Developer Dashboard** so "Connect Spotify" actually works for a specific person (e.g. handing the app to someone else).
-
-> Wakify uses Spotify's **App Remote SDK** for playback. That means the person using the app needs the **Spotify app installed + logged in** and a **Spotify Premium** account — and, while the Spotify project is in Development Mode, their account must be **added to the dashboard** (see [Section 3](#3-make-it-work-for-a-specific-person-the-important-part)).
 
 ---
 
