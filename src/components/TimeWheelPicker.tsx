@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, TextInput, View } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import { TimeFormat } from '../types';
 import { to12h, to24h } from '../utils/time';
 import { useTheme } from '../context/SettingsContext';
+import { isRTL } from '../i18n';
 import { WheelPicker } from './WheelPicker';
 
 interface TimeWheelPickerProps {
@@ -12,9 +14,12 @@ interface TimeWheelPickerProps {
   onChange: (hour24: number, minute: number) => void;
 }
 
+const WIDTH = Dimensions.get('window').width;
 const ITEM_HEIGHT = 44;
 const VISIBLE_ROWS = 5;
-const COL_WIDTH = 96;
+const COL_WIDTH = WIDTH * 0.15;
+const SELECTED_FONT = 34;
+const UNSELECTED_FONT = 28;
 
 function pad2(n: number): string {
   return n < 10 ? `0${n}` : `${n}`;
@@ -29,7 +34,8 @@ export function TimeWheelPicker({
   onChange,
 }: TimeWheelPickerProps) {
   const theme = useTheme();
-  const is12h = timeFormat === '12h';
+  // AM/PM (12h) only in English; Hebrew is always 24h.
+  const is12h = timeFormat === '12h' && !isRTL;
 
   // Tap a column to type the value directly instead of scrolling the wheel.
   const [editing, setEditing] = useState<EditTarget>(null);
@@ -166,20 +172,13 @@ export function TimeWheelPicker({
       );
     }
     return (
-      <View style={{ width: COL_WIDTH, height: containerHeight }}>
-        {wheel}
-        {/* Tap the centered value to switch to typing. */}
-        <Pressable
-          onPress={() => beginEdit(target)}
-          style={[styles.tapZone, { top: bandTop, height: ITEM_HEIGHT }]}
-        />
-      </View>
+      <View style={{ width: COL_WIDTH, height: containerHeight }}>{wheel}</View>
     );
   };
 
   return (
     <View style={[styles.wrapper, { height: containerHeight }]}>
-      {/* Shared coral selection band spanning all columns, behind the text. */}
+      {/* Selection pill behind the centered numbers. */}
       <View
         pointerEvents="none"
         style={[
@@ -187,8 +186,7 @@ export function TimeWheelPicker({
           {
             top: bandTop,
             height: ITEM_HEIGHT,
-            backgroundColor: theme.accent + '14', // ~8% alpha tint
-            borderColor: theme.accent + '40',
+            backgroundColor: theme.accent + '1F', // subtle accent fill
           },
         ]}
       />
@@ -204,6 +202,10 @@ export function TimeWheelPicker({
             visibleRows={VISIBLE_ROWS}
             align="right"
             width={COL_WIDTH}
+            fontSize={UNSELECTED_FONT}
+            selectedFontSize={SELECTED_FONT}
+            onActivate={() => beginEdit('hour')}
+            loop
           />,
           'right',
         )}
@@ -220,6 +222,10 @@ export function TimeWheelPicker({
             visibleRows={VISIBLE_ROWS}
             align="left"
             width={COL_WIDTH}
+            fontSize={UNSELECTED_FONT}
+            selectedFontSize={SELECTED_FONT}
+            onActivate={() => beginEdit('minute')}
+            loop
           />,
           'left',
         )}
@@ -232,10 +238,22 @@ export function TimeWheelPicker({
             itemHeight={ITEM_HEIGHT}
             visibleRows={VISIBLE_ROWS}
             align="center"
-            width={64}
+            width={72}
           />
         )}
       </View>
+
+      {/* Edge fades so numbers dissolve toward the top/bottom for a clean look. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.background, theme.background + '00']}
+        style={[styles.fade, { top: 0, height: bandTop }]}
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={[theme.background + '00', theme.background]}
+        style={[styles.fade, { bottom: 0, height: bandTop }]}
+      />
     </View>
   );
 }
@@ -246,28 +264,29 @@ const styles = StyleSheet.create({
   },
   band: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    borderRadius: 12,
-    borderWidth: 1,
+    left: 8,
+    right: 8,
+    borderRadius: 16,
   },
   columns: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
+    // Always lay out hour : minute left-to-right, regardless of LTR/RTL.
+    direction: 'ltr',
   },
-  colon: {
-    fontSize: 28,
-    fontWeight: '800',
-    marginHorizontal: 2,
-  },
-  tapZone: {
+  fade: {
     position: 'absolute',
     left: 0,
     right: 0,
   },
+  colon: {
+    fontSize: SELECTED_FONT,
+    fontWeight: '800',
+    marginHorizontal: 0,
+  },
   input: {
-    fontSize: 28,
+    fontSize: SELECTED_FONT,
     fontWeight: '800',
     paddingHorizontal: 4,
   },

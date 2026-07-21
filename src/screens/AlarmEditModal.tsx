@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Animated,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -11,9 +12,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSheetTransition } from '../hooks/useSheetTransition';
 import { Alarm, DayIndex, VibratePattern } from '../types';
 import { AlarmDraft, useAlarms } from '../context/AlarmsContext';
 import { useSettings, useTheme } from '../context/SettingsContext';
+import { usePremium } from '../context/PremiumContext';
 import { palette } from '../theme/palette';
 import { font, radius, spacing } from '../theme/metrics';
 import { TimeWheelPicker } from '../components/TimeWheelPicker';
@@ -23,9 +26,12 @@ import { Toggle } from '../components/Toggle';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { CalendarModal } from '../components/CalendarModal';
 import { GenrePicker } from '../components/GenrePicker';
-import { PremiumModal } from '../components/PremiumModal';
+import { PaywallModal } from '../components/PaywallModal';
+import { SpotifyPickerModal } from '../components/SpotifyPickerModal';
 import { Icon } from '../components/Icon';
 import { genreNames, resolveGenres } from '../data/genres';
+import { t } from '../i18n';
+import { TranslationKey } from '../i18n/en';
 
 const MONTHS_SHORT = [
   'Jan',
@@ -55,11 +61,11 @@ interface AlarmEditModalProps {
   onPreview: (alarm: Alarm) => void;
 }
 
-const VIBRATE_PATTERNS: { label: string; value: VibratePattern }[] = [
-  { label: 'Default', value: 'default' },
-  { label: 'Gentle', value: 'gentle' },
-  { label: 'Medium', value: 'medium' },
-  { label: 'Strong', value: 'strong' },
+const VIBRATE_PATTERNS: { labelKey: TranslationKey; value: VibratePattern }[] = [
+  { labelKey: 'vibrate_default', value: 'default' },
+  { labelKey: 'vibrate_gentle', value: 'gentle' },
+  { labelKey: 'vibrate_medium', value: 'medium' },
+  { labelKey: 'vibrate_strong', value: 'strong' },
 ];
 
 const NUDGE_INTERVALS = [5, 10, 15, 30];
@@ -75,6 +81,7 @@ function emptyDraft(): AlarmDraft {
     vibratePattern: 'medium',
     nudgingEnabled: false,
     nudgeInterval: 5,
+    snoozeInterval: 5,
     genres: undefined,
   };
 }
@@ -88,12 +95,14 @@ export function AlarmEditModal({
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { settings } = useSettings();
+  const { isPremium } = usePremium();
   const { addAlarm, updateAlarm, removeAlarm } = useAlarms();
 
   const [draft, setDraft] = useState<AlarmDraft>(emptyDraft());
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [genreVisible, setGenreVisible] = useState(false);
-  const [premiumVisible, setPremiumVisible] = useState(false);
+  const [paywallVisible, setPaywallVisible] = useState(false);
+  const [spotifyPickerVisible, setSpotifyPickerVisible] = useState(false);
 
   // Re-initialize the draft each time the modal opens.
   useEffect(() => {
@@ -144,22 +153,29 @@ export function AlarmEditModal({
   const connected = !!settings.musicProvider;
   const resolvedGenresText = draft.genres
     ? genreNames(draft.genres)
-    : `Default (${genreNames(resolveGenres(draft, settings.defaultGenres))})`;
+    : t('default_genres', {
+        genres: genreNames(resolveGenres(draft, settings.defaultGenres)),
+      });
+
+  const { mounted, backdropStyle, sheetStyle } = useSheetTransition(visible);
 
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.sheetWrapper}>
-          <View
+          <Animated.View
             style={[
               styles.sheet,
+              sheetStyle,
               { backgroundColor: theme.background },
             ]}>
             <View
@@ -167,7 +183,7 @@ export function AlarmEditModal({
             />
             <View style={styles.sheetHeader}>
               <Text style={[styles.sheetTitle, { color: theme.text }]}>
-                {alarm ? 'Edit Alarm' : 'New Alarm'}
+                {alarm ? t('edit_alarm') : t('new_alarm')}
               </Text>
               {alarm && (
                 <Pressable
@@ -196,7 +212,7 @@ export function AlarmEditModal({
               <TextInput
                 value={draft.label}
                 onChangeText={label => setDraft(prev => ({ ...prev, label }))}
-                placeholder="Alarm label..."
+                placeholder={t('alarm_label_placeholder')}
                 placeholderTextColor={theme.subtext}
                 style={[
                   styles.input,
@@ -247,7 +263,7 @@ export function AlarmEditModal({
 
               <View style={styles.sectionRow}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Wake-up Genres
+                  {t('wake_up_genres')}
                 </Text>
                 {connected && (
                   <Pressable
@@ -260,7 +276,7 @@ export function AlarmEditModal({
                     ]}>
                     <Icon name="play" size={13} color={theme.accent} />
                     <Text style={[styles.previewText, { color: theme.accent }]}>
-                      Preview
+                      {t('preview')}
                     </Text>
                   </Pressable>
                 )}
@@ -272,35 +288,78 @@ export function AlarmEditModal({
                     android_ripple={{ color: palette.ripple }}
                     style={[
                       styles.musicRow,
-                      { borderColor: theme.cardBorder, backgroundColor: theme.card },
+                      !!draft.spotifyUri && styles.inactiveRow,
+                      {
+                        borderColor: draft.spotifyUri
+                          ? theme.cardBorder
+                          : theme.accent,
+                        backgroundColor: theme.card,
+                      },
                     ]}>
                     <Icon name="music" size={18} color={theme.subtext} />
-                    <Text style={[styles.musicName, { color: theme.text }]}>
-                      {resolvedGenresText}
+                    <Text
+                      style={[
+                        styles.musicName,
+                        // When a Spotify playlist is the active source, show a
+                        // muted placeholder so the user sees genres aren't in use.
+                        { color: draft.spotifyUri ? theme.subtext : theme.text },
+                      ]}
+                      numberOfLines={1}>
+                      {draft.spotifyUri
+                        ? t('wake_up_genres')
+                        : resolvedGenresText}
                     </Text>
                     <Icon name="chevronRight" size={18} color={theme.subtext} />
                   </Pressable>
 
+                  {/* Premium feature: pick one of your own Spotify playlists.
+                      Free users tap → paywall; premium → your playlists picker. */}
                   <Pressable
-                    onPress={() => setPremiumVisible(true)}
+                    onPress={() =>
+                      isPremium
+                        ? setSpotifyPickerVisible(true)
+                        : setPaywallVisible(true)
+                    }
+                    android_ripple={{ color: palette.ripple }}
                     style={[
                       styles.musicRow,
-                      styles.lockedRow,
-                      { borderColor: theme.cardBorder, backgroundColor: theme.card },
+                      styles.spotifyRow,
+                      !isPremium && styles.lockedRow,
+                      {
+                        borderColor:
+                          isPremium && draft.spotifyUri
+                            ? theme.accent
+                            : theme.cardBorder,
+                        backgroundColor: theme.card,
+                      },
                     ]}>
                     <Icon name="crown" size={18} color={theme.subtext} />
-                    <Text style={[styles.musicName, { color: theme.subtext }]}>
-                      Specific Song or Playlist
+                    <Text
+                      style={[
+                        styles.musicName,
+                        { color: draft.spotifyUri ? theme.text : theme.subtext },
+                      ]}
+                      numberOfLines={1}>
+                      {draft.spotifyUri
+                        ? draft.spotifyUriName ?? t('spotify_playlist')
+                        : t('wake_up_playlist')}
                     </Text>
-                    <View
-                      style={[styles.premiumPill, { backgroundColor: theme.accent }]}>
-                      <Text style={styles.premiumPillText}>Premium</Text>
-                    </View>
+                    {isPremium ? (
+                      <Icon name="chevronRight" size={18} color={theme.subtext} />
+                    ) : (
+                      <View
+                        style={[
+                          styles.premiumPill,
+                          { backgroundColor: theme.accent },
+                        ]}>
+                        <Text style={styles.premiumPillText}>{t('pro')}</Text>
+                      </View>
+                    )}
                   </Pressable>
                 </>
               ) : (
                 <Text style={[styles.musicHint, { color: theme.subtext }]}>
-                  Connect a music account in Settings to choose wake-up genres.
+                  {t('connect_music_hint')}
                 </Text>
               )}
 
@@ -310,7 +369,7 @@ export function AlarmEditModal({
 
               <View style={styles.sectionRow}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Vibrate
+                  {t('vibrate')}
                 </Text>
                 <Toggle
                   value={draft.vibrateEnabled}
@@ -324,7 +383,7 @@ export function AlarmEditModal({
                   {VIBRATE_PATTERNS.map(pattern => (
                     <Chip
                       key={pattern.value}
-                      label={pattern.label}
+                      label={t(pattern.labelKey)}
                       selected={draft.vibratePattern === pattern.value}
                       onPress={() =>
                         setDraft(prev => ({
@@ -343,7 +402,7 @@ export function AlarmEditModal({
 
               <View style={styles.sectionRow}>
                 <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  Nudging
+                  {t('nudging')}
                 </Text>
                 <Toggle
                   value={draft.nudgingEnabled}
@@ -357,7 +416,7 @@ export function AlarmEditModal({
                   {NUDGE_INTERVALS.map(minutes => (
                     <Chip
                       key={minutes}
-                      label={`${minutes} min`}
+                      label={t('minutes_short', { minutes })}
                       selected={(draft.nudgeInterval ?? 5) === minutes}
                       onPress={() =>
                         setDraft(prev => ({ ...prev, nudgeInterval: minutes }))
@@ -366,6 +425,28 @@ export function AlarmEditModal({
                   ))}
                 </View>
               )}
+
+              <View
+                style={[styles.divider, { backgroundColor: theme.cardBorder }]}
+              />
+
+              <View style={styles.sectionRow}>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('snooze')}
+                </Text>
+              </View>
+              <View style={styles.chips}>
+                {NUDGE_INTERVALS.map(minutes => (
+                  <Chip
+                    key={minutes}
+                    label={t('minutes_short', { minutes })}
+                    selected={(draft.snoozeInterval ?? 5) === minutes}
+                    onPress={() =>
+                      setDraft(prev => ({ ...prev, snoozeInterval: minutes }))
+                    }
+                  />
+                ))}
+              </View>
             </ScrollView>
 
             <View
@@ -377,19 +458,19 @@ export function AlarmEditModal({
                 },
               ]}>
               <PrimaryButton
-                title="Cancel"
+                title={t('cancel')}
                 variant="outline"
                 onPress={onClose}
                 style={styles.footerButton}
               />
               <PrimaryButton
-                title="Save Alarm"
+                title={t('save_alarm')}
                 variant="filled"
                 onPress={onSave}
                 style={styles.footerButton}
               />
             </View>
-          </View>
+          </Animated.View>
         </KeyboardAvoidingView>
 
         <CalendarModal
@@ -404,13 +485,40 @@ export function AlarmEditModal({
           value={draft.genres ?? null}
           allowUseDefault
           onChange={genres =>
-            setDraft(prev => ({ ...prev, genres: genres ?? undefined }))
+            // Choosing genres switches the source away from a Spotify playlist.
+            setDraft(prev => ({
+              ...prev,
+              genres: genres ?? undefined,
+              spotifyUri: undefined,
+              spotifyUriName: undefined,
+            }))
           }
           onClose={() => setGenreVisible(false)}
         />
-        <PremiumModal
-          visible={premiumVisible}
-          onClose={() => setPremiumVisible(false)}
+        <PaywallModal
+          visible={paywallVisible}
+          onClose={() => setPaywallVisible(false)}
+        />
+        <SpotifyPickerModal
+          visible={spotifyPickerVisible}
+          value={draft.spotifyUri}
+          onSelect={(uri, name) => {
+            setDraft(prev => ({
+              ...prev,
+              spotifyUri: uri,
+              spotifyUriName: name,
+            }));
+            setSpotifyPickerVisible(false);
+          }}
+          onClear={() => {
+            setDraft(prev => ({
+              ...prev,
+              spotifyUri: undefined,
+              spotifyUriName: undefined,
+            }));
+            setSpotifyPickerVisible(false);
+          }}
+          onClose={() => setSpotifyPickerVisible(false)}
         />
         </View>
       </Modal>
@@ -533,6 +641,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     opacity: 0.7,
   },
+  spotifyRow: {
+    marginTop: spacing.sm,
+  },
+  inactiveRow: {
+    opacity: 0.5,
+  },
   premiumPill: {
     borderRadius: radius.pill,
     paddingHorizontal: spacing.sm,
@@ -560,12 +674,13 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
+    justifyContent: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.md,
     borderTopWidth: 1,
   },
   footerButton: {
-    flex: 1,
+    minWidth: 130,
   },
 });

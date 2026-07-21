@@ -9,12 +9,13 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GENRES } from '../data/genres';
+import { GENRES, genreLabel } from '../data/genres';
 import { useTheme } from '../context/SettingsContext';
 import { palette } from '../theme/palette';
 import { font, radius, spacing } from '../theme/metrics';
 import { PrimaryButton } from './PrimaryButton';
 import { Icon } from './Icon';
+import { t } from '../i18n';
 
 interface GenrePickerProps {
   visible: boolean;
@@ -60,7 +61,7 @@ export function GenrePicker({
     const isRemoving = !useDefault && selected.includes(id);
     // Enforce at least one genre when in custom mode.
     if (isRemoving && selected.length <= 1) {
-      showHint('At least one genre is required');
+      showHint(t('at_least_one_genre'));
       return;
     }
     setUseDefault(false);
@@ -93,7 +94,7 @@ export function GenrePicker({
           <View style={[styles.grabber, { backgroundColor: theme.cardBorder }]} />
           <View style={styles.headerRow}>
             <Text style={[styles.title, { color: theme.text }]}>
-              Wake-up Genres
+              {t('wake_up_genres')}
             </Text>
             <Pressable
               onPress={onClose}
@@ -125,10 +126,10 @@ export function GenrePicker({
                 </View>
                 <View style={styles.rowText}>
                   <Text style={[styles.rowName, { color: theme.text }]}>
-                    Use default genres
+                    {t('use_default_genres')}
                   </Text>
                   <Text style={[styles.rowSub, { color: theme.subtext }]}>
-                    Follow the app-wide setting
+                    {t('follow_app_setting')}
                   </Text>
                 </View>
                 {useDefault && (
@@ -160,10 +161,10 @@ export function GenrePicker({
                   </LinearGradient>
                   <View style={styles.rowText}>
                     <Text style={[styles.rowName, { color: theme.text }]}>
-                      {genre.name}
+                      {genreLabel(genre)}
                     </Text>
                     <Text style={[styles.rowSub, { color: theme.subtext }]}>
-                      {genre.songs.length} songs
+                      {t('genre_subtitle')}
                     </Text>
                   </View>
                   {isSelected && (
@@ -180,7 +181,7 @@ export function GenrePicker({
             </View>
           )}
 
-          <PrimaryButton title="Done" variant="filled" onPress={apply} />
+          <PrimaryButton title={t('done')} variant="filled" onPress={apply} />
         </View>
       </View>
     </Modal>

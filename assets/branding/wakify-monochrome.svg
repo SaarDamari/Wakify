@@ -1,0 +1,19 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <!-- Adaptive-icon MONOCHROME layer (Android 13 themed icons): solid silhouette,
+       transparent background. The system ignores the color and tints the alpha. -->
+  <g transform="translate(512 512) scale(0.8) translate(-512 -541.5)">
+    <g stroke="#FFFFFF" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M322 372 A86 86 0 0 1 494 372 Z" fill="#FFFFFF" stroke="none"/>
+      <path d="M530 372 A86 86 0 0 1 702 372 Z" fill="#FFFFFF" stroke="none"/>
+      <path d="M432 312 Q512 252 592 312" stroke-width="26"/>
+      <path d="M402 760 L362 824" stroke-width="40"/>
+      <path d="M622 760 L662 824" stroke-width="40"/>
+      <circle cx="512" cy="566" r="206" fill="none" stroke-width="34"/>
+    </g>
+    <g fill="#FFFFFF">
+      <ellipse cx="468" cy="650" rx="58" ry="44" transform="rotate(-20 468 650)"/>
+      <rect x="518" y="468" width="22" height="194" rx="11"/>
+      <path d="M540 468 q88 22 70 106 q-2 -54 -70 -66 z"/>
+    </g>
+  </g>
+</svg>

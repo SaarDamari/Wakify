@@ -1,7 +1,10 @@
 import * as Keychain from 'react-native-keychain';
 import { log, warn } from '../utils/logger';
 
-const SERVICE = '@wakify/spotify-tokens';
+// Default service holds the App Remote "connected" marker; the Web API OAuth
+// tokens live in a separate service so the sentinel marker can never masquerade
+// as a real access token. Callers pass the service explicitly where it matters.
+const DEFAULT_SERVICE = '@wakify/spotify-tokens';
 
 export interface SpotifyTokens {
   accessToken: string;
@@ -10,10 +13,13 @@ export interface SpotifyTokens {
   accessTokenExpirationDate: string;
 }
 
-export async function saveTokens(tokens: SpotifyTokens): Promise<void> {
+export async function saveTokens(
+  tokens: SpotifyTokens,
+  service: string = DEFAULT_SERVICE,
+): Promise<void> {
   try {
     await Keychain.setGenericPassword('spotify', JSON.stringify(tokens), {
-      service: SERVICE,
+      service,
     });
     log('tokens', 'saveTokens ok');
   } catch (e) {
@@ -21,9 +27,11 @@ export async function saveTokens(tokens: SpotifyTokens): Promise<void> {
   }
 }
 
-export async function loadTokens(): Promise<SpotifyTokens | null> {
+export async function loadTokens(
+  service: string = DEFAULT_SERVICE,
+): Promise<SpotifyTokens | null> {
   try {
-    const creds = await Keychain.getGenericPassword({ service: SERVICE });
+    const creds = await Keychain.getGenericPassword({ service });
     log('tokens', 'loadTokens: found?', !!creds);
     if (!creds) {
       return null;
@@ -35,9 +43,11 @@ export async function loadTokens(): Promise<SpotifyTokens | null> {
   }
 }
 
-export async function clearTokens(): Promise<void> {
+export async function clearTokens(
+  service: string = DEFAULT_SERVICE,
+): Promise<void> {
   try {
-    await Keychain.resetGenericPassword({ service: SERVICE });
+    await Keychain.resetGenericPassword({ service });
   } catch {
     // best-effort
   }

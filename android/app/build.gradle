@@ -77,9 +77,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace "com.wakify"
+    namespace "com.wakify.app"
     defaultConfig {
-        applicationId "com.wakify"
+        applicationId "com.wakify.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
@@ -112,6 +112,12 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // Spotify App Remote SDK aars — moved here from the library module because AGP 8
+    // forbids bundling local .aar deps inside a library (react-native-spotify-remote).
+    def spotifySdk = "$rootDir/../node_modules/react-native-spotify-remote/android/external/SpotifySDK"
+    implementation files("$spotifySdk/app-remote-lib/spotify-app-remote-release-0.7.0.aar")
+    implementation files("$spotifySdk/auth-lib/spotify-auth-release-1.2.1.aar")
 
     if (hermesEnabled.toBoolean()) {
         implementation("com.facebook.react:hermes-android")

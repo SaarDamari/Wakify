@@ -1,70 +1,73 @@
 import React from 'react';
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../context/SettingsContext';
 import { palette } from '../theme/palette';
 import { font, radius, spacing, shadow } from '../theme/metrics';
 import { PrimaryButton } from './PrimaryButton';
 import { Icon } from './Icon';
+import { t } from '../i18n';
 
-interface ExitConfirmModalProps {
+interface SpotifySessionExpiredModalProps {
   visible: boolean;
-  onStay: () => void;
-  onLeave: () => void;
+  onReconnect: () => void;
+  onDismiss: () => void;
 }
 
-// App-themed replacement for the OS "are you sure" dialog shown when the user
-// presses back to exit. Explains that keeping Wakify open lets the alarm play
-// its Spotify song.
-export function ExitConfirmModal({
+export function SpotifySessionExpiredModal({
   visible,
-  onStay,
-  onLeave,
-}: ExitConfirmModalProps) {
+  onReconnect,
+  onDismiss,
+}: SpotifySessionExpiredModalProps) {
   const theme = useTheme();
+  const insets = useSafeAreaInsets();
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="fade"
-      onRequestClose={onStay}>
+      animationType="slide"
+      onRequestClose={onDismiss}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onStay} />
+        <Pressable style={styles.backdrop} onPress={onDismiss} />
         <View
           style={[
-            styles.card,
-            { backgroundColor: theme.background },
-            shadow('raised'),
+            styles.sheet,
+            {
+              backgroundColor: theme.background,
+              paddingBottom: insets.bottom + spacing.xl,
+            },
           ]}>
+          <View style={[styles.grabber, { backgroundColor: theme.cardBorder }]} />
+
           <LinearGradient
             colors={[theme.bannerFrom, theme.bannerTo]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={[styles.badge, shadow('raised')]}>
-            <Icon name="music" size={32} color={palette.white} />
+            <Icon name="spotify" size={36} color={palette.white} />
           </LinearGradient>
 
           <Text style={[styles.title, { color: theme.text }]}>
-            Are you sure you want to leave?
+            {t('spotify_expired_title')}
           </Text>
           <Text style={[styles.body, { color: theme.subtext }]}>
-            Keep Wakify open in the background so your alarm can play its Spotify
-            song. If you fully close the app, the alarm may not play your music.
+            {t('spotify_expired_body')}
           </Text>
 
           <PrimaryButton
-            title="Stay"
+            title={t('reconnect')}
             variant="filled"
-            onPress={onStay}
-            style={styles.stay}
+            onPress={onReconnect}
+            style={styles.reconnect}
           />
           <Pressable
-            onPress={onLeave}
+            onPress={onDismiss}
             android_ripple={{ color: palette.ripple, borderless: true }}
-            style={({ pressed }) => [styles.leave, pressed && { opacity: 0.6 }]}>
-            <Text style={[styles.leaveText, { color: theme.subtext }]}>
-              Leave anyway
+            style={({ pressed }) => [styles.notNow, pressed && { opacity: 0.6 }]}>
+            <Text style={[styles.notNowText, { color: theme.subtext }]}>
+              {t('not_now')}
             </Text>
           </Pressable>
         </View>
@@ -76,9 +79,7 @@ export function ExitConfirmModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
+    justifyContent: 'flex-end',
   },
   backdrop: {
     position: 'absolute',
@@ -86,20 +87,24 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  card: {
-    width: '100%',
-    maxWidth: 360,
-    borderRadius: radius.xl,
+  sheet: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
     alignItems: 'center',
   },
+  grabber: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: spacing.xl,
+  },
   badge: {
-    width: 64,
-    height: 64,
+    width: 72,
+    height: 72,
     borderRadius: radius.xl,
     alignItems: 'center',
     justifyContent: 'center',
@@ -116,17 +121,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
     lineHeight: 22,
+    paddingHorizontal: spacing.md,
     marginBottom: spacing.xl,
   },
-  stay: {
+  reconnect: {
     alignSelf: 'stretch',
   },
-  leave: {
+  notNow: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     marginTop: spacing.xs,
   },
-  leaveText: {
+  notNowText: {
     fontSize: font.label,
     fontWeight: '600',
   },

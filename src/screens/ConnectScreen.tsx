@@ -1,5 +1,6 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,10 +17,8 @@ import { font, radius, spacing, shadow } from '../theme/metrics';
 import { Icon } from '../components/Icon';
 import { MusicProviderButton } from '../components/MusicProviderButton';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { GENRES } from '../data/genres';
-
-// Apple Music has no native auth yet (Phase 7); keep a brief simulated delay.
-const MOCK_CONNECT_MS = 1200;
+import { GENRES, genreLabel } from '../data/genres';
+import { t } from '../i18n';
 
 type Step = 'provider' | 'genres';
 
@@ -31,7 +30,6 @@ export function ConnectScreen() {
   const [step, setStep] = useState<Step>('provider');
   const [connecting, setConnecting] = useState<MusicProvider | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleConnect = async (provider: MusicProvider) => {
     if (connecting) {
@@ -39,18 +37,16 @@ export function ConnectScreen() {
     }
     setConnecting(provider);
     try {
-      if (provider === 'spotify') {
-        // Real OAuth — opens the Spotify login page. Advance only on success.
-        if (await spotify.connect()) {
-          connectMusic('spotify');
-          setStep('genres');
-        }
-      } else {
-        await new Promise<void>(resolve => {
-          timer.current = setTimeout(resolve, MOCK_CONNECT_MS);
-        });
-        connectMusic('apple');
+      // Real OAuth — opens the Spotify login page. Advance only on success.
+      const err = await spotify.connect();
+      if (!err) {
+        connectMusic('spotify');
         setStep('genres');
+      } else {
+        Alert.alert(
+          t('spotify_connect_failed_title'),
+          err.message || t('spotify_connect_failed_body'),
+        );
       }
     } finally {
       setConnecting(null);
@@ -77,10 +73,10 @@ export function ConnectScreen() {
       <View style={container}>
         <View style={styles.playlistHeader}>
           <Text style={[styles.title, { color: theme.text }]}>
-            Pick your favorite genres
+            {t('pick_genres_title')}
           </Text>
           <Text style={[styles.subtitle, { color: theme.subtext }]}>
-            A random song from these genres will play when your alarm rings.
+            {t('pick_genres_subtitle')}
           </Text>
         </View>
 
@@ -109,7 +105,7 @@ export function ConnectScreen() {
                   <Icon name="music" size={18} color={palette.white} />
                 </LinearGradient>
                 <Text style={[styles.genreName, { color: theme.text }]}>
-                  {genre.name}
+                  {genreLabel(genre)}
                 </Text>
                 {isSelected && (
                   <Icon name="check" size={20} color={theme.accent} />
@@ -121,7 +117,7 @@ export function ConnectScreen() {
 
         <View style={styles.actions}>
           <PrimaryButton
-            title="Continue"
+            title={t('continue')}
             variant="filled"
             disabled={selected.length === 0}
             onPress={() => finishOnboarding(selected)}
@@ -131,7 +127,7 @@ export function ConnectScreen() {
             android_ripple={{ color: palette.ripple, borderless: true }}
             style={({ pressed }) => [styles.skip, pressed && { opacity: 0.6 }]}>
             <Text style={[styles.skipText, { color: theme.subtext }]}>
-              Skip for now
+              {t('skip_for_now')}
             </Text>
           </Pressable>
         </View>
@@ -150,19 +146,14 @@ export function ConnectScreen() {
           <Icon name="bell" size={40} color={palette.white} />
         </LinearGradient>
         <Text style={[styles.title, { color: theme.text }]}>
-          Welcome to Wakify
+          {t('welcome_title')}
         </Text>
         <Text style={[styles.subtitle, { color: theme.subtext }]}>
-          Wake up to your favorite music. Connect an account to get started.
+          {t('welcome_subtitle')}
         </Text>
       </View>
 
       <View style={styles.actions}>
-        <MusicProviderButton
-          provider="apple"
-          connecting={connecting === 'apple'}
-          onPress={() => handleConnect('apple')}
-        />
         <MusicProviderButton
           provider="spotify"
           connecting={connecting === 'spotify'}
@@ -175,7 +166,7 @@ export function ConnectScreen() {
           android_ripple={{ color: palette.ripple, borderless: true }}
           style={({ pressed }) => [styles.skip, pressed && { opacity: 0.6 }]}>
           <Text style={[styles.skipText, { color: theme.subtext }]}>
-            Maybe later
+            {t('maybe_later')}
           </Text>
         </Pressable>
       </View>

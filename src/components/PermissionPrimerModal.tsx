@@ -7,6 +7,7 @@ import { palette } from '../theme/palette';
 import { font, radius, spacing, shadow } from '../theme/metrics';
 import { PrimaryButton } from './PrimaryButton';
 import { Icon } from './Icon';
+import { t } from '../i18n';
 
 interface PermissionPrimerModalProps {
   visible: boolean;
@@ -49,15 +50,14 @@ export function PermissionPrimerModal({
           </LinearGradient>
 
           <Text style={[styles.title, { color: theme.text }]}>
-            Wake up on time
+            {t('primer_title')}
           </Text>
           <Text style={[styles.body, { color: theme.subtext }]}>
-            To wake you up with great music, we need your permission to send
-            notifications and sound alarms.
+            {t('primer_body')}
           </Text>
 
           <PrimaryButton
-            title="Allow"
+            title={t('allow')}
             variant="filled"
             onPress={onAllow}
             style={styles.allow}
@@ -67,7 +67,7 @@ export function PermissionPrimerModal({
             android_ripple={{ color: palette.ripple, borderless: true }}
             style={({ pressed }) => [styles.notNow, pressed && { opacity: 0.6 }]}>
             <Text style={[styles.notNowText, { color: theme.subtext }]}>
-              Not now
+              {t('not_now')}
             </Text>
           </Pressable>
         </View>

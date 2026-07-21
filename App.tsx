@@ -5,13 +5,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import {
-  AppState,
-  BackHandler,
-  StatusBar,
-  useColorScheme,
-  View,
-} from 'react-native';
+import { AppState, StatusBar, useColorScheme, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AppProvider } from './src/context/AppProvider';
 import { useSettings } from './src/context/SettingsContext';
@@ -24,7 +18,14 @@ import { ConnectScreen } from './src/screens/ConnectScreen';
 import { AlarmRingScreen } from './src/screens/AlarmRingScreen';
 import notifee, { EventType } from '@notifee/react-native';
 import { PermissionPrimerModal } from './src/components/PermissionPrimerModal';
-import { ExitConfirmModal } from './src/components/ExitConfirmModal';
+import { AlarmReliabilityModal } from './src/components/AlarmReliabilityModal';
+import { SpotifySessionExpiredModal } from './src/components/SpotifySessionExpiredModal';
+import { disconnectSpotify } from './src/services/spotifyService';
+import { onSpotifySessionExpired } from './src/services/spotifyAuthEvents';
+import {
+  getReliabilityStatus,
+  isReliabilityComplete,
+} from './src/services/alarmReliability';
 import {
   dismissAlarm,
   ensureAlarmChannel,
@@ -32,6 +33,7 @@ import {
   rescheduleAfterFire,
   scheduleSnooze,
   showSnoozePending,
+  startRingForegroundService,
   syncScheduledAlarms,
 } from './src/services/notifications';
 import {
@@ -43,7 +45,7 @@ import { clearPendingRing, takePendingRing } from './src/services/pendingRing';
 import { formatTime } from './src/utils/time';
 import { Alarm } from './src/types';
 
-const SNOOZE_MINUTES = 9;
+const SNOOZE_DEFAULT = 5;
 
 function App() {
   const scheme = useColorScheme();
@@ -62,49 +64,59 @@ function App() {
 }
 
 function Root() {
-  const { settings, hydrated, theme, markPermissionPrimed } = useSettings();
+  const { settings, hydrated, theme, markPermissionPrimed, disconnectMusic } =
+    useSettings();
   const { alarms } = useAlarms();
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
   const [editingAlarm, setEditingAlarm] = useState<Alarm | undefined>(undefined);
   const [ringing, setRinging] = useState<Alarm | null>(null);
   const [primerVisible, setPrimerVisible] = useState(false);
+  const [reliabilityVisible, setReliabilityVisible] = useState(false);
+  const [reliabilityOk, setReliabilityOk] = useState(true);
   const [snoozeBanner, setSnoozeBanner] = useState<string | null>(null);
-  const [exitConfirmVisible, setExitConfirmVisible] = useState(false);
+  const [spotifyExpiredVisible, setSpotifyExpiredVisible] = useState(false);
 
   const onRing = useCallback((alarm: Alarm) => setRinging(alarm), []);
   const rearm = useForegroundAlarm(alarms, onRing);
 
-  // Latest "is something layered on top?" flag, read by the back handler below
-  // without needing to re-subscribe on every state change.
-  const overlayOpenRef = useRef(false);
-  overlayOpenRef.current =
-    settingsVisible ||
-    editVisible ||
-    primerVisible ||
-    exitConfirmVisible ||
-    !!ringing;
-
-  // Android: confirm (with an app-themed dialog) before the back button exits
-  // the app, since closing it fully can stop the alarm from playing its Spotify
-  // song. When an overlay is open, let it handle back (close itself) as usual.
-  useEffect(() => {
-    const onBack = () => {
-      if (overlayOpenRef.current) {
-        return false;
-      }
-      setExitConfirmVisible(true);
-      return true; // prevent the default exit until the user chooses
-    };
-    const sub = BackHandler.addEventListener('hardwareBackPress', onBack);
-    return () => sub.remove();
-  }, []);
+  // True while the reliability checklist is shown as part of the Add-Alarm flow,
+  // so closing it continues into the editor (vs. just dismissing from a banner).
+  const reliabilityFromAddRef = useRef(false);
 
   // Ensure the delivery channel exists. We do NOT request notification
   // permission here — that happens exactly once, when the user taps "Add Alarm"
   // (see openAdd → primer → allowPrimer), so we never prompt on launch.
   useEffect(() => {
     ensureAlarmChannel();
+  }, []);
+
+  // When the Spotify refresh token dies (invalid_grant), the auth service has
+  // already cleared the token; here we flip the app to disconnected and prompt
+  // the user to log in again. Alarms keep ringing via the ringtone fallback.
+  useEffect(
+    () =>
+      onSpotifySessionExpired(() => {
+        disconnectMusic();
+        void disconnectSpotify();
+        setSpotifyExpiredVisible(true);
+      }),
+    [disconnectMusic],
+  );
+
+  // Track whether the alarm-reliability grants (full-screen intent + overlay) are
+  // in place, so the home screen can surface a banner. Re-check when returning
+  // from a system settings screen.
+  useEffect(() => {
+    const check = () =>
+      getReliabilityStatus().then(s => setReliabilityOk(isReliabilityComplete(s)));
+    check();
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') {
+        check();
+      }
+    });
+    return () => sub.remove();
   }, []);
 
   // Keep OS-scheduled alarms in sync with the alarm list (fires when closed).
@@ -147,6 +159,14 @@ function Root() {
       sub.remove();
     };
   }, []);
+
+  // While a ring is showing in the foreground, keep the media foreground service
+  // running (covers the in-app timer, snooze/nudge re-rings and pending-ring).
+  useEffect(() => {
+    if (ringing) {
+      startRingForegroundService();
+    }
+  }, [ringing]);
 
   // Foreground notifee events: reschedule repeats and open the ring on tap.
   // (Fresh in-app ringing while open is driven by useForegroundAlarm; a snooze
@@ -207,19 +227,48 @@ function Root() {
     openAddModal();
   };
 
+  // After the notification primer, show the reliability checklist once if the
+  // full-screen-intent / overlay grants are still missing, then open the editor.
+  const continueAfterPrimer = async () => {
+    setPrimerVisible(false);
+    const status = await getReliabilityStatus();
+    if (!isReliabilityComplete(status)) {
+      setReliabilityOk(false);
+      reliabilityFromAddRef.current = true;
+      setReliabilityVisible(true);
+      return;
+    }
+    openAddModal();
+  };
+
+  // Open the checklist from the home banner (not part of the Add flow).
+  const openReliability = () => {
+    reliabilityFromAddRef.current = false;
+    setReliabilityVisible(true);
+  };
+
+  // On close: refresh the banner state and, if this was the Add flow, continue
+  // into the alarm editor regardless of whether every grant was given.
+  const closeReliability = () => {
+    setReliabilityVisible(false);
+    getReliabilityStatus().then(s => setReliabilityOk(isReliabilityComplete(s)));
+    if (reliabilityFromAddRef.current) {
+      reliabilityFromAddRef.current = false;
+      openAddModal();
+    }
+  };
+
   // "Allow" → actually request OS notification permission, then continue.
   const allowPrimer = async () => {
     await requestAlarmPermissions();
     markPermissionPrimed();
-    setPrimerVisible(false);
-    openAddModal();
+    await continueAfterPrimer();
   };
 
   // "Not now" → remember we primed and continue without requesting.
   const dismissPrimer = () => {
     markPermissionPrimed();
-    setPrimerVisible(false);
-    openAddModal();
+    continueAfterPrimer();
   };
 
   const openEdit = (alarm: Alarm) => {
@@ -240,6 +289,7 @@ function Root() {
     setSnoozeBanner(null);
     rearm();
     clearPendingRing();
+    notifee.stopForegroundService(); // end the media FGS started at fire time
     if (alarm) {
       dismissAlarm(alarm.id);
     }
@@ -253,15 +303,17 @@ function Root() {
     setRinging(null);
     rearm();
     clearPendingRing();
+    notifee.stopForegroundService(); // end the media FGS until the snooze re-ring
     if (alarm) {
       dismissAlarm(alarm.id);
-      const fireAt = new Date(Date.now() + SNOOZE_MINUTES * 60_000);
+      const minutes = alarm.snoozeInterval ?? SNOOZE_DEFAULT;
+      const fireAt = new Date(Date.now() + minutes * 60_000);
       const label = formatTime(
         fireAt.getHours(),
         fireAt.getMinutes(),
         settings.timeFormat,
       );
-      scheduleSnooze(alarm, SNOOZE_MINUTES);
+      scheduleSnooze(alarm, minutes);
       showSnoozePending(alarm, label);
       setSnoozeBanner(label);
     }
@@ -274,6 +326,8 @@ function Root() {
         onAddAlarm={openAdd}
         onEditAlarm={openEdit}
         snoozeBanner={snoozeBanner}
+        showReliabilityWarning={!reliabilityOk}
+        onFixReliability={openReliability}
       />
       <SettingsModal
         visible={settingsVisible}
@@ -290,13 +344,17 @@ function Root() {
         onAllow={allowPrimer}
         onDismiss={dismissPrimer}
       />
-      <ExitConfirmModal
-        visible={exitConfirmVisible}
-        onStay={() => setExitConfirmVisible(false)}
-        onLeave={() => {
-          setExitConfirmVisible(false);
-          BackHandler.exitApp();
+      <AlarmReliabilityModal
+        visible={reliabilityVisible}
+        onClose={closeReliability}
+      />
+      <SpotifySessionExpiredModal
+        visible={spotifyExpiredVisible}
+        onReconnect={() => {
+          setSpotifyExpiredVisible(false);
+          setSettingsVisible(true);
         }}
+        onDismiss={() => setSpotifyExpiredVisible(false)}
       />
       {ringing && (
         <AlarmRingScreen

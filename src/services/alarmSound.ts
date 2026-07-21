@@ -1,6 +1,13 @@
 import { Platform } from 'react-native';
 import Sound from 'react-native-sound';
 import { VolumeManager } from 'react-native-volume-manager';
+import {
+  isRingtoneNativeAvailable,
+  playRingtone,
+  stopRingtone,
+} from './ringtones';
+
+import { effectiveVolume } from '../utils/volume';
 
 // Android loads res/raw by basename (no extension); iOS by bundled filename.
 const FILE = Platform.OS === 'android' ? 'alarm' : 'alarm.wav';
@@ -14,7 +21,7 @@ let savedVolume: number | null = null;
 // default max) so the alarm is heard. Setting the stream volume scales BOTH the
 // bundled tone and Spotify. We save the prior volume first to restore it after.
 export async function raiseAlarmVolume(level: number = 1): Promise<void> {
-  const target = Math.max(0, Math.min(1, level));
+  const target = effectiveVolume(level);
   try {
     if (savedVolume == null) {
       const { volume } = await VolumeManager.getVolume();
@@ -55,9 +62,17 @@ function ensureCategory(): void {
   }
 }
 
-// Loop the bundled alarm tone. Free/random tier + fallback when a provider
-// can't play. Fully guarded so a missing native module degrades gracefully.
-export function playAlarmSound(): void {
+// Play the emergency fallback when a music provider can't play. On Android this
+// is the user's chosen system ringtone (or the OS default alarm when unset),
+// played natively via MediaPlayer since react-native-sound can't handle
+// content:// URIs; everywhere else it's the bundled alarm.wav tone. `uri` is the
+// chosen ringtone (null/'' => default); `volume` is the per-player loudness 0–1.
+// Fully guarded so a missing native module degrades gracefully.
+export function playAlarmSound(uri?: string | null, volume: number = 1): void {
+  if (isRingtoneNativeAvailable()) {
+    playRingtone(uri ?? '', volume);
+    return;
+  }
   try {
     stopAlarmSound();
     ensureCategory();
@@ -84,6 +99,8 @@ export function playAlarmSound(): void {
 }
 
 export function stopAlarmSound(): void {
+  // Stop whichever path played — the native ringtone and/or the bundled tone.
+  stopRingtone();
   try {
     if (current) {
       current.stop();

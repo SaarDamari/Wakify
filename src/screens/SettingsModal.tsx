@@ -1,5 +1,14 @@
-import React, { useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Animated,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MusicProvider, ThemeName } from '../types';
@@ -12,27 +21,30 @@ import { SegmentedControl } from '../components/SegmentedControl';
 import { VolumeSlider } from '../components/VolumeSlider';
 import { MusicProviderButton } from '../components/MusicProviderButton';
 import { GenrePicker } from '../components/GenrePicker';
+import { AlarmReliabilityModal } from '../components/AlarmReliabilityModal';
+import { RingtonePickerModal } from '../components/RingtonePickerModal';
+import { playRingtone, stopRingtone } from '../services/ringtones';
+import { useSheetTransition } from '../hooks/useSheetTransition';
 import { Icon } from '../components/Icon';
 import { genreNames } from '../data/genres';
 import { log } from '../utils/logger';
+import { t, isRTL } from '../i18n';
+import { TranslationKey } from '../i18n/en';
 
 interface SettingsModalProps {
   visible: boolean;
   onClose: () => void;
 }
 
-const THEME_OPTIONS: { name: ThemeName; label: string }[] = [
-  { name: 'coral', label: 'Coral' },
-  { name: 'blue', label: 'Blue' },
+const THEME_OPTIONS: { name: ThemeName; labelKey: TranslationKey }[] = [
+  { name: 'coral', labelKey: 'theme_coral' },
+  { name: 'blue', labelKey: 'theme_blue' },
+  { name: 'purple', labelKey: 'theme_purple' },
+  { name: 'green', labelKey: 'theme_green' },
+  { name: 'sunset', labelKey: 'theme_sunset' },
+  { name: 'pink', labelKey: 'theme_pink' },
+  { name: 'teal', labelKey: 'theme_teal' },
 ];
-
-const PROVIDER_NAMES: Record<MusicProvider, string> = {
-  apple: 'Apple Music',
-  spotify: 'Spotify',
-};
-
-// Apple Music has no native auth yet (Phase 7); keep a brief simulated delay.
-const MOCK_CONNECT_MS = 1200;
 
 export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const theme = useTheme();
@@ -49,11 +61,31 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
   const spotify = useSpotifyAuth();
   const [connecting, setConnecting] = useState<MusicProvider | null>(null);
   const [genreVisible, setGenreVisible] = useState(false);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [reliabilityVisible, setReliabilityVisible] = useState(false);
+  const [ringtoneVisible, setRingtoneVisible] = useState(false);
 
   const defaultGenresText = settings.defaultGenres.length
     ? genreNames(settings.defaultGenres)
-    : 'Not set';
+    : t('not_set');
+
+  // Preview the fallback ringtone at the chosen level so the user can judge the
+  // volume, then auto-stop. Stops when the sheet closes/unmounts.
+  const previewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleVolumeChange = (v: number) => {
+    setAlarmVolume(v);
+    playRingtone(settings.fallbackRingtoneUri, v);
+    if (previewTimer.current) {
+      clearTimeout(previewTimer.current);
+    }
+    previewTimer.current = setTimeout(() => stopRingtone(), 2500);
+  };
+
+  useEffect(() => {
+    if (!visible) {
+      stopRingtone();
+    }
+    return () => stopRingtone();
+  }, [visible]);
 
   const handleConnect = async (provider: MusicProvider) => {
     if (connecting) {
@@ -61,19 +93,17 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     }
     setConnecting(provider);
     try {
-      if (provider === 'spotify') {
-        // Real OAuth — opens the Spotify login page. Persist only on success.
-        const ok = await spotify.connect();
-        log('settings', 'spotify.connect() →', ok);
-        if (ok) {
-          connectMusic('spotify');
-          log('settings', "connectMusic('spotify') persisted");
-        }
+      // Real OAuth — opens the Spotify login page. Persist only on success.
+      const err = await spotify.connect();
+      log('settings', 'spotify.connect() →', err ? err.message : 'ok');
+      if (!err) {
+        connectMusic('spotify');
+        log('settings', "connectMusic('spotify') persisted");
       } else {
-        await new Promise<void>(resolve => {
-          timer.current = setTimeout(resolve, MOCK_CONNECT_MS);
-        });
-        connectMusic('apple');
+        Alert.alert(
+          t('spotify_connect_failed_title'),
+          err.message || t('spotify_connect_failed_body'),
+        );
       }
     } finally {
       setConnecting(null);
@@ -87,17 +117,22 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
     disconnectMusic();
   };
 
+  const { mounted, backdropStyle, sheetStyle } = useSheetTransition(visible);
+
   return (
     <Modal
-      visible={visible}
+      visible={mounted}
       transparent
-      animationType="slide"
+      animationType="none"
       onRequestClose={onClose}>
       <View style={styles.overlay}>
-        <Pressable style={styles.backdrop} onPress={onClose} />
-        <View
+        <Animated.View style={[styles.backdrop, backdropStyle]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        </Animated.View>
+        <Animated.View
           style={[
             styles.sheet,
+            sheetStyle,
             {
               backgroundColor: theme.background,
               paddingBottom: insets.bottom + spacing.xl,
@@ -106,7 +141,9 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
           <View style={[styles.grabber, { backgroundColor: theme.cardBorder }]} />
 
           <View style={styles.headerRow}>
-            <Text style={[styles.title, { color: theme.text }]}>Settings</Text>
+            <Text style={[styles.title, { color: theme.text }]}>
+              {t('settings_title')}
+            </Text>
             <Pressable
               onPress={onClose}
               hitSlop={12}
@@ -115,74 +152,123 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
             </Pressable>
           </View>
 
-          <View style={styles.sectionHeader}>
-            <Icon name="clock" size={18} color={theme.subtext} />
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Time Format
-            </Text>
-          </View>
-          <SegmentedControl
-            options={[
-              { label: '12-Hour (AM/PM)', value: '12h' },
-              { label: '24-Hour', value: '24h' },
-            ]}
-            value={settings.timeFormat}
-            onChange={setTimeFormat}
-          />
+          {!isRTL && (
+            <>
+              <View style={styles.sectionHeader}>
+                <Icon name="clock" size={18} color={theme.subtext} />
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>
+                  {t('time_format')}
+                </Text>
+              </View>
+              <SegmentedControl
+                options={[
+                  { label: t('time_12h'), value: '12h' },
+                  { label: t('time_24h'), value: '24h' },
+                ]}
+                value={settings.timeFormat}
+                onChange={setTimeFormat}
+              />
+            </>
+          )}
 
           <View style={[styles.sectionHeader, styles.sectionSpacing]}>
             <Icon name="palette" size={18} color={theme.subtext} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Color Theme
+              {t('color_theme')}
             </Text>
           </View>
-          <View style={styles.themeRow}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.themeRow}>
             {THEME_OPTIONS.map(option => {
               const selected = settings.theme === option.name;
-              // Accent/banner fields are scheme-independent; the swatch is a
-              // fixed colorful preview.
+              // Accent/banner fields are scheme-independent.
               const optTheme = getTheme(option.name, 'light');
               return (
                 <Pressable
                   key={option.name}
                   onPress={() => setTheme(option.name)}
-                  android_ripple={{ color: palette.ripple }}
+                  accessibilityLabel={t(option.labelKey)}
+                  android_ripple={{ color: palette.ripple, borderless: true }}
                   style={[
-                    styles.themeCardWrapper,
-                    selected && {
-                      borderColor: optTheme.accent,
-                      borderWidth: 3,
-                    },
+                    styles.themeSwatchWrapper,
+                    selected && { borderColor: optTheme.accent },
                   ]}>
                   <LinearGradient
                     colors={[optTheme.bannerFrom, optTheme.bannerTo]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={styles.themeCard}>
-                    <View style={styles.themeInner}>
-                      <Text style={styles.themeLabel}>{option.label}</Text>
-                    </View>
+                    style={styles.themeSwatch}>
+                    {selected && (
+                      <Icon name="check" size={16} color={palette.white} />
+                    )}
                   </LinearGradient>
                 </Pressable>
               );
             })}
-          </View>
+          </ScrollView>
 
           <View style={[styles.sectionHeader, styles.sectionSpacing]}>
             <Icon name="bell" size={18} color={theme.subtext} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Alarm Volume
+              {t('alarm_volume')}
             </Text>
           </View>
           <VolumeSlider
             value={settings.alarmVolume}
-            onChange={setAlarmVolume}
+            onChange={handleVolumeChange}
           />
+
+          <View style={[styles.sectionHeader, styles.sectionSpacing]}>
+            <Icon name="bell" size={18} color={theme.subtext} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t('fallback_ringtone')}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setRingtoneVisible(true)}
+            android_ripple={{ color: palette.ripple }}
+            style={[
+              styles.playlistRow,
+              { borderColor: theme.cardBorder, backgroundColor: theme.card },
+            ]}>
+            <Text style={[styles.connectedText, styles.rowLabel, { color: theme.subtext }]}>
+              {t('fallback_ringtone_sub')}
+            </Text>
+            <View style={styles.playlistValue}>
+              <Text
+                numberOfLines={1}
+                style={[styles.connectedText, styles.rowValueText, { color: theme.text }]}>
+                {settings.fallbackRingtoneTitle ?? t('default_alarm_sound')}
+              </Text>
+              <Icon name="chevronRight" size={18} color={theme.subtext} />
+            </View>
+          </Pressable>
+
+          <View style={[styles.sectionHeader, styles.sectionSpacing]}>
+            <Icon name="shield" size={18} color={theme.subtext} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              {t('alarm_reliability')}
+            </Text>
+          </View>
+          <Pressable
+            onPress={() => setReliabilityVisible(true)}
+            android_ripple={{ color: palette.ripple }}
+            style={[
+              styles.playlistRow,
+              { borderColor: theme.cardBorder, backgroundColor: theme.card },
+            ]}>
+            <Text style={[styles.connectedText, styles.rowLabel, { color: theme.subtext }]}>
+              {t('alarm_reliability_sub')}
+            </Text>
+            <Icon name="chevronRight" size={18} color={theme.subtext} />
+          </Pressable>
 
           <View style={[styles.sectionHeader, styles.sectionSpacing]}>
             <Icon name="music" size={18} color={theme.subtext} />
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Music
+              {t('music')}
             </Text>
           </View>
           {settings.musicProvider ? (
@@ -193,7 +279,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   { borderColor: theme.cardBorder, backgroundColor: theme.card },
                 ]}>
                 <Text style={[styles.connectedText, { color: theme.text }]}>
-                  Connected to {PROVIDER_NAMES[settings.musicProvider]}
+                  {t('connected_to', { provider: 'Spotify' })}
                 </Text>
                 <Pressable
                   onPress={handleDisconnect}
@@ -204,7 +290,7 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                     pressed && { opacity: 0.7 },
                   ]}>
                   <Text style={[styles.disconnectText, { color: theme.text }]}>
-                    Disconnect
+                    {t('disconnect')}
                   </Text>
                 </Pressable>
               </View>
@@ -215,11 +301,13 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
                   styles.playlistRow,
                   { borderColor: theme.cardBorder, backgroundColor: theme.card },
                 ]}>
-                <Text style={[styles.connectedText, { color: theme.subtext }]}>
-                  Wake-up Genres
+                <Text style={[styles.connectedText, styles.rowLabel, { color: theme.subtext }]}>
+                  {t('wake_up_genres')}
                 </Text>
                 <View style={styles.playlistValue}>
-                  <Text style={[styles.connectedText, { color: theme.text }]}>
+                  <Text
+                    numberOfLines={1}
+                    style={[styles.connectedText, styles.rowValueText, { color: theme.text }]}>
                     {defaultGenresText}
                   </Text>
                   <Icon name="chevronRight" size={18} color={theme.subtext} />
@@ -229,12 +317,6 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
           ) : (
             <View style={styles.musicButtons}>
               <MusicProviderButton
-                provider="apple"
-                compact
-                connecting={connecting === 'apple'}
-                onPress={() => handleConnect('apple')}
-              />
-              <MusicProviderButton
                 provider="spotify"
                 compact
                 connecting={connecting === 'spotify'}
@@ -242,12 +324,20 @@ export function SettingsModal({ visible, onClose }: SettingsModalProps) {
               />
             </View>
           )}
-        </View>
+        </Animated.View>
         <GenrePicker
           visible={genreVisible}
           value={settings.defaultGenres}
           onChange={genres => setDefaultGenres(genres ?? [])}
           onClose={() => setGenreVisible(false)}
+        />
+        <AlarmReliabilityModal
+          visible={reliabilityVisible}
+          onClose={() => setReliabilityVisible(false)}
+        />
+        <RingtonePickerModal
+          visible={ringtoneVisible}
+          onClose={() => setRingtoneVisible(false)}
         />
       </View>
     </Modal>
@@ -305,30 +395,26 @@ const styles = StyleSheet.create({
   },
   themeRow: {
     flexDirection: 'row',
-    gap: spacing.md,
+    alignItems: 'center',
+    gap: spacing.lg,
+    paddingVertical: spacing.xs,
   },
-  themeCardWrapper: {
-    flex: 1,
-    borderRadius: radius.xl,
-    borderWidth: 3,
+  themeSwatchWrapper: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderWidth: 2,
     borderColor: 'transparent',
-  },
-  themeCard: {
-    borderRadius: radius.lg,
-    height: 48,
-    padding: spacing.xs,
-  },
-  themeInner: {
-    flex: 1,
-    borderRadius: radius.md,
-    backgroundColor: 'rgba(255,255,255,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  themeLabel: {
-    color: palette.white,
-    fontSize: font.label,
-    fontWeight: '700',
+  themeSwatch: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   musicButtons: {
     gap: spacing.sm,
@@ -350,15 +436,26 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
     borderWidth: 1,
     borderRadius: radius.lg,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
   },
+  // The descriptive left label; shrinks (rather than colliding with the value)
+  // when both texts are long — notably in Hebrew.
+  rowLabel: {
+    flexShrink: 1,
+  },
   playlistValue: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1,
     gap: spacing.xs,
+  },
+  // The current value; truncates with an ellipsis instead of wrapping/overlapping.
+  rowValueText: {
+    flexShrink: 1,
   },
   disconnect: {
     borderWidth: 1,

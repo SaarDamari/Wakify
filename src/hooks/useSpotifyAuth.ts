@@ -10,7 +10,7 @@ interface SpotifyAuthState {
   isConnected: boolean;
   loading: boolean;
   error: Error | null;
-  connect: () => Promise<boolean>;
+  connect: () => Promise<Error | null>;
   disconnect: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -37,11 +37,12 @@ export function useSpotifyAuth(): SpotifyAuthState {
       await connectSpotify();
       setIsConnected(true);
       log('auth', 'useSpotifyAuth.connect ok');
-      return true;
+      return null;
     } catch (e) {
       warn('auth', 'useSpotifyAuth.connect FAILED', (e as Error)?.message, e);
-      setError(e instanceof Error ? e : new Error(String(e)));
-      return false;
+      const err = e instanceof Error ? e : new Error(String(e));
+      setError(err);
+      return err;
     } finally {
       setLoading(false);
     }

@@ -1,13 +1,11 @@
-package com.wakify
+package com.wakify.app
 
 import android.app.KeyguardManager
-import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.provider.Settings
+import android.os.PowerManager
 import android.view.WindowManager
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
@@ -25,7 +23,19 @@ class MainActivity : ReactActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     showWhenLockedAndTurnScreenOn()
-    ensureFullScreenIntentPermission()
+    forceScreenOn()
+  }
+
+  /**
+   * Scenario 3 (app already alive, screen off): the full-screen intent / forced
+   * launch arrives as a new intent on the existing activity, so onCreate does NOT
+   * run again. Re-apply the wake path here so the screen still turns on.
+   */
+  override fun onNewIntent(intent: Intent) {
+    super.onNewIntent(intent)
+    setIntent(intent)
+    showWhenLockedAndTurnScreenOn()
+    forceScreenOn()
   }
 
   /**
@@ -54,30 +64,24 @@ class MainActivity : ReactActivity() {
   }
 
   /**
-   * Android 14 (API 34) no longer auto-grants USE_FULL_SCREEN_INTENT to general
-   * apps — without it the OS demotes the alarm to a heads-up banner and won't
-   * wake a locked screen. Send the user to the system toggle once.
+   * setTurnScreenOn alone is unreliable on some Samsung firmware. Acquire a brief
+   * screen-bright wakelock to physically power the display on, then auto-release;
+   * the FLAG_KEEP_SCREEN_ON window flag keeps it lit while the ring screen is up.
    */
-  private fun ensureFullScreenIntentPermission() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-      return
-    }
-    val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    if (nm.canUseFullScreenIntent()) {
-      return
-    }
-    val prefs = getSharedPreferences("wakify", Context.MODE_PRIVATE)
-    if (prefs.getBoolean("fsi_prompted", false)) {
-      return
-    }
-    prefs.edit().putBoolean("fsi_prompted", true).apply()
+  private fun forceScreenOn() {
     try {
-      startActivity(
-        Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT)
-          .setData(Uri.parse("package:$packageName")),
-      )
+      val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+      @Suppress("DEPRECATION")
+      val wl =
+        pm.newWakeLock(
+          PowerManager.SCREEN_BRIGHT_WAKE_LOCK or
+            PowerManager.ACQUIRE_CAUSES_WAKEUP or
+            PowerManager.ON_AFTER_RELEASE,
+          "wakify:activity-screen",
+        )
+      wl.acquire(10_000L)
     } catch (e: Exception) {
-      // Settings screen unavailable on this device/OEM — ignore.
+      // best-effort — window flags remain as the fallback
     }
   }
 

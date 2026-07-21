@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import notifee, {
   AndroidCategory,
+  AndroidForegroundServiceType,
   AndroidImportance,
   AndroidVisibility,
   AuthorizationStatus,
@@ -19,8 +20,22 @@ import { nextFireDate } from '../utils/nextAlarm';
 // creation — bump this id (…-vN) whenever the sound/vibration changes.
 export const ALARM_CHANNEL_ID = 'wakify-alarms-v4';
 
+// Same as the alarm channel but with vibration OFF, used when the alarm has
+// vibrateEnabled=false. Android channel vibration is immutable + independent of
+// the per-notification setting, so a separate channel is the only way to make an
+// alarm truly silent (no buzz) while others still vibrate.
+export const ALARM_CHANNEL_NOVIB_ID = 'wakify-alarms-novib-v1';
+
 // Quiet channel for the "snooze pending" status notification (no sound/vibration).
 export const SNOOZE_INFO_CHANNEL_ID = 'wakify-snooze-info';
+
+// LOW, silent channel for the keep-alive media foreground service while ringing.
+// LOW => no heads-up/sound, so this notification is unobtrusive (it just has to
+// exist while the foreground service runs).
+export const RING_SERVICE_CHANNEL_ID = 'wakify-ring-service';
+
+// Fixed id for the foreground-service notification (one at a time).
+const RING_SERVICE_ID = 'wakify-ring-service';
 
 // Vibration pattern (ms): pairs of [vibrate, sleep], looped by the OS. notifee
 // requires an EVEN count of POSITIVE values (no leading 0).
@@ -44,6 +59,16 @@ export async function ensureAlarmChannel(): Promise<void> {
       sound: 'silent', // res/raw/silent.mp3
       vibration: true,
       vibrationPattern: ALARM_VIBRATION_PATTERN,
+      bypassDnd: true,
+    });
+    // No-vibration variant for alarms with vibrateEnabled=false.
+    await notifee.createChannel({
+      id: ALARM_CHANNEL_NOVIB_ID,
+      name: 'Alarms (no vibration)',
+      importance: AndroidImportance.HIGH,
+      visibility: AndroidVisibility.PUBLIC,
+      sound: 'silent', // res/raw/silent.mp3
+      vibration: false,
       bypassDnd: true,
     });
   } catch (e) {
@@ -114,17 +139,30 @@ function buildAlarmNotification(
       nudgeCount: String(nudgeCount),
     },
     android: {
-      channelId: ALARM_CHANNEL_ID,
+      // Route to the no-vibration channel when the alarm opts out of vibration.
+      channelId: alarm.vibrateEnabled
+        ? ALARM_CHANNEL_ID
+        : ALARM_CHANNEL_NOVIB_ID,
       category: AndroidCategory.ALARM,
       importance: AndroidImportance.HIGH,
+      // Transparent white silhouette so the status/heads-up icon isn't a white box.
+      smallIcon: 'ic_stat_wakify',
+      color: '#2FCB6E',
       // Silent clip (see channel) so the ring screen owns audio — no overlap.
       sound: 'silent', // res/raw/silent.mp3
-      vibrationPattern: ALARM_VIBRATION_PATTERN,
+      ...(alarm.vibrateEnabled
+        ? { vibrationPattern: ALARM_VIBRATION_PATTERN }
+        : {}),
       // Show full-screen even on the lock screen, and route taps into the app.
       // launchActivity 'default' points the intent at the launcher (MainActivity).
       fullScreenAction: { id: 'default', launchActivity: 'default' },
       pressAction: { id: 'default', launchActivity: 'default' },
-      autoCancel: false,
+      // Pop as a heads-up + fire the full-screen ring, then auto-hide (the user
+      // interacts with the full-screen UI, not the shade). The keep-alive media
+      // foreground service is a SEPARATE quiet notification — see
+      // startRingForegroundService — so the alert isn't pinned ongoing.
+      autoCancel: true,
+      timeoutAfter: 10000,
     },
     ios: {
       sound: 'alarm.wav', // bundled in the iOS app target
@@ -274,8 +312,14 @@ export async function showSnoozePending(
       android: {
         channelId: SNOOZE_INFO_CHANNEL_ID,
         importance: AndroidImportance.LOW,
-        ongoing: true,
-        autoCancel: false,
+        smallIcon: 'ic_stat_wakify',
+        color: '#2FCB6E',
+        // Not pinned: dismissible by swipe/tap and auto-clears after a short
+        // while so it doesn't sit stuck in the shade. The in-app banner remains
+        // the persistent "snooze pending" indicator.
+        ongoing: false,
+        autoCancel: true,
+        timeoutAfter: 10000,
         pressAction: { id: 'default', launchActivity: 'default' },
       },
       ios: { interruptionLevel: 'passive' as const },
@@ -285,10 +329,47 @@ export async function showSnoozePending(
   }
 }
 
+// Start the keep-alive media foreground service on its own quiet notification so
+// audio + process survive backgrounding/Doze while ringing (Scenarios 3 & 4),
+// without pinning the alarm alert itself. Idempotent; ended by
+// notifee.stopForegroundService() on Stop/Snooze. Best-effort (never throws).
+export async function startRingForegroundService(): Promise<void> {
+  if (Platform.OS !== 'android') {
+    return;
+  }
+  try {
+    await notifee.createChannel({
+      id: RING_SERVICE_CHANNEL_ID,
+      name: 'Alarm playback',
+      importance: AndroidImportance.LOW,
+    });
+    await notifee.displayNotification({
+      id: RING_SERVICE_ID,
+      title: 'Wakify',
+      body: 'Alarm playing',
+      android: {
+        channelId: RING_SERVICE_CHANNEL_ID,
+        importance: AndroidImportance.LOW,
+        smallIcon: 'ic_stat_wakify',
+        color: '#2FCB6E',
+        ongoing: true,
+        asForegroundService: true,
+        foregroundServiceTypes: [
+          AndroidForegroundServiceType.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+        ],
+        pressAction: { id: 'default', launchActivity: 'default' },
+      },
+    });
+  } catch (e) {
+    console.warn('[notifications] startRingForegroundService failed', e);
+  }
+}
+
 // Stop a ringing alarm: clear the visible notification, the pending snooze
 // trigger, and the snooze-status notification.
 export async function dismissAlarm(alarmId: string): Promise<void> {
   await Promise.all([
+    notifee.cancelDisplayedNotification(RING_SERVICE_ID),
     notifee.cancelDisplayedNotification(alarmId),
     notifee.cancelTriggerNotification(snoozeId(alarmId)),
     notifee.cancelDisplayedNotification(snoozeId(alarmId)),

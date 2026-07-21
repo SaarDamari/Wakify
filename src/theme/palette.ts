@@ -12,6 +12,26 @@ export const palette = {
   blueAccent: '#5BB7E0',
   blueAccentDeep: '#3E9FD0',
 
+  purpleLight: '#C58BF2',
+  purpleAccent: '#8B5CF6',
+  purpleDeep: '#7C3AED',
+
+  greenLight: '#8FE3B0',
+  greenAccent: '#34C759',
+  greenDeep: '#28A745',
+
+  sunsetLight: '#FFC58A',
+  sunsetAccent: '#FF8A3D',
+  sunsetDeep: '#F2701F',
+
+  pinkLight: '#FFB3CE',
+  pinkAccent: '#FF6FA5',
+  pinkDeep: '#F0508C',
+
+  tealLight: '#9BE7EA',
+  tealAccent: '#20C0C7',
+  tealDeep: '#129AA0',
+
   bg: '#F4F3F1',
   white: '#FFFFFF',
 
@@ -32,11 +52,16 @@ export const palette = {
   disabledDark: '#4C5662',
   dayActiveDark: '#33414F',
 
+  // Warning/attention (e.g. missing permissions banner).
+  warning: '#E0A23E',
+
+  // Premium / PRO badge accent (gold).
+  premiumGold: '#F5C451',
+
   // Press ripple (Android) — subtle dark tint.
   ripple: 'rgba(31,45,61,0.12)',
 
   // Music provider brands.
   spotifyGreen: '#1DB954',
-  appleBlack: '#111114',
   brandText: '#FFFFFF',
 };

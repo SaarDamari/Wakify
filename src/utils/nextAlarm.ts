@@ -1,5 +1,7 @@
 import { Alarm } from '../types';
 import { jsDayToDayIndex } from './time';
+import { t } from '../i18n';
+import { TranslationKey } from '../i18n/en';
 
 export interface NextAlarmResult {
   alarm: Alarm;
@@ -7,7 +9,23 @@ export interface NextAlarmResult {
   label: string; // "Today" | "Tomorrow" | "Mon" ...
 }
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+export const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Minutes-level countdown for the next-alarm banner: "in 5h 12m" / "in 43 min"
+// / "in <1 min". Rounds DOWN to whole minutes remaining so it never over-counts
+// (e.g. 80s → "1 min", not "2 min"). Caller guarantees ms > 0.
+export function formatCountdown(ms: number): string {
+  const totalMin = Math.floor(ms / 60_000);
+  if (totalMin <= 0) {
+    return t('next_in_soon');
+  }
+  if (totalMin < 60) {
+    return t('next_in_min', { minutes: totalMin });
+  }
+  const hours = Math.floor(totalMin / 60);
+  const minutes = totalMin % 60;
+  return t('next_in_hm', { hours, minutes });
+}
 
 function startOfDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
@@ -66,13 +84,21 @@ function relativeLabel(date: Date, now: Date): string {
     (startOfDay(date).getTime() - startOfDay(now).getTime()) / DAY_MS,
   );
   if (dayDiff === 0) {
-    return 'Today';
+    return t('next_today');
   }
   if (dayDiff === 1) {
-    return 'Tomorrow';
+    return t('next_tomorrow');
   }
-  const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  return names[date.getDay()];
+  const keys: TranslationKey[] = [
+    'wday_sun',
+    'wday_mon',
+    'wday_tue',
+    'wday_wed',
+    'wday_thu',
+    'wday_fri',
+    'wday_sat',
+  ];
+  return t(keys[date.getDay()]);
 }
 
 export function computeNextAlarm(

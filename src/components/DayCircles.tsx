@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DayIndex } from '../types';
-import { ALL_DAYS, DAY_LABELS } from '../utils/time';
+import { DAY_ORDER, DAY_LABELS } from '../utils/time';
 import { useTheme } from '../context/SettingsContext';
 import { palette } from '../theme/palette';
 
@@ -27,7 +27,7 @@ export function DayCircles({
 
   return (
     <View style={[styles.row, layout === 'group' && styles.rowGroup]}>
-      {ALL_DAYS.map(day => {
+      {DAY_ORDER.map(day => {
         const active = days.includes(day);
         const dimensions = { width: size, height: size, borderRadius: size / 2 };
 
