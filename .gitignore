@@ -33,6 +33,8 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
+# Private release signing config — never commit (see keystore.properties.example)
+keystore.properties
 .kotlin/
 
 # node.js
