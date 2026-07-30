@@ -90,7 +90,7 @@ Spotify Connect only works if the Spotify **Developer Dashboard** app is configu
 | **APIs to enable** | Web API **and** Android |
 | **Client ID** | must equal `CLIENT_ID` in `src/config/spotify.ts` |
 
-The current app is already wired to Client ID `54435db798c84a1caad3dc3a68e0553f`. The requested scopes live in `SPOTIFY_SCOPES` in `src/config/spotify.ts` (streaming, app-remote-control, playlist-read, etc.) — you don't enter these in the dashboard; the app requests them at login.
+**You must use your own Spotify app.** `CLIENT_ID` in `src/config/spotify.ts` ships as the placeholder `YOUR_SPOTIFY_CLIENT_ID` — set it to the Client ID of the app you create below, then build your own APK. Don't rely on someone else's build: a Client ID ties the app to one dashboard, and while that app is in Development Mode only the accounts *its owner* adds under User Management can log in. The requested scopes live in `SPOTIFY_SCOPES` in the same file (streaming, app-remote-control, playlist-read, etc.) — you don't enter these in the dashboard; the app requests them at login.
 
 ### Steps
 1. **Create app** (or open the existing one) → **Settings** → **Edit**.
