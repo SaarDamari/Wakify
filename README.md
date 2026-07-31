@@ -20,6 +20,22 @@ Built with bare **React Native** (New Architecture / Fabric) for **Android and i
 
 Wakify plays music through Spotify's **App Remote SDK**, so the person using the app needs the **Spotify app installed + logged in** and a **Spotify Premium** account. While the Spotify project is in Development Mode, their account must also be **added to the dashboard** (see [Section 3](#3-make-it-work-for-a-specific-person-the-important-part)).
 
+## Platform support
+
+Wakify is **Android-first**. The full experience — an alarm that wakes the phone, rings full-screen over the lock screen, and **automatically starts Spotify** while the app is closed or the phone is asleep — is **Android only**. It relies on capabilities iOS does not offer: exact alarms, full-screen intents, and a foreground service.
+
+**iOS is limited by design, not by a missing permission.** When a scheduled notification fires on iPhone and the app isn't open, Apple only lets it show on the lock screen and play a short bundled sound — it **cannot** auto-launch the app, run code in the background, or start Spotify. So on iOS:
+
+| Capability | Android | iOS |
+|---|---|---|
+| Alarm rings while app closed / locked | ✅ full-screen + music | ⚠️ notification + bundled sound only |
+| Auto-start Spotify at alarm time | ✅ | ❌ (Apple blocks background start) |
+| Spotify playback | ✅ App Remote | ❌ not wired (falls back to ringtone) |
+| Wake to your Spotify song | ✅ automatic | ⚠️ only after tapping the notification to open the app |
+| Install method | Sideload APK | Xcode + Apple ID / Developer account ($99/yr) |
+
+Making Spotify play on iOS *at all* would require integrating the Spotify iOS SDK (Podfile/AppDelegate/auth) and would still only work in the foreground — it can't match Android's automatic, locked-screen music alarm. Contributions toward a best-effort iOS build are welcome, but the automatic music-alarm behavior is an inherent Apple limitation.
+
 ## License
 
 Released under the [MIT License](LICENSE) — © 2026 Saar Damari.
